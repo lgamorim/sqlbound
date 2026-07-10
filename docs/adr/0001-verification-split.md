@@ -34,6 +34,18 @@ Split the verification pipeline into two stages that never share a process bound
    or database connection itself. It compares each snapshot against the generated method's
    declared shape and reports mismatches as `SQLB###` diagnostics.
 
+   The analyzer consumes the snapshots through Roslyn's `AdditionalFiles`/`AdditionalTexts`
+   mechanism, wired up automatically for consumers via a `buildTransitive` `.props` file in the
+   NuGet package. This is not an implementation detail but the enabling mechanism of the split:
+   analyzers are prohibited from arbitrary file I/O (RS1035), and `AdditionalTexts` participate in
+   Roslyn's change tracking, so editing a snapshot correctly re-triggers analysis.
+
+**Deferred to ADR 0002:** whether the *source generator* also consumes the `.sqlbound/` snapshots
+(snapshot-driven codegen, where a missing snapshot is a build error) or emits materialization code
+purely from the declared C# method signature (signature-driven codegen, where snapshots feed only
+the analyzer). This ADR constrains both options equally — no database I/O outside the prepare
+step — but does not choose between them.
+
 This mirrors SQLx's own offline mode (the `.sqlx` directory it commits for `cargo check` without a
 live database).
 
