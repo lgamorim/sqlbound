@@ -213,9 +213,20 @@ internal static class QueryMethodParser
             Report(SqlQueryDiagnostics.UnsupportedReturnType, symbol.Name, symbol.ReturnType.ToDisplayString());
         }
 
-        ColumnModel[] columns = scalarColumn is not null
-            ? [scalarColumn]
-            : rowType is null ? [] : ParseColumns(rowType, guidType, Report);
+        var rowMapping = RowMappingKind.Constructor;
+        ColumnModel[] columns;
+        if (scalarColumn is not null)
+        {
+            columns = [scalarColumn];
+        }
+        else if (rowType is not null)
+        {
+            columns = ParseColumns(rowType, guidType, Report, out rowMapping);
+        }
+        else
+        {
+            columns = [];
+        }
 
         if (diagnostics.Count > 0)
         {
@@ -239,6 +250,7 @@ internal static class QueryMethodParser
             symbol.ReturnType.ToDisplayString(TypeTextFormat),
             shape,
             elementKind,
+            rowMapping,
             scalarColumn?.TypeText ?? rowType?.ToDisplayString(TypeTextFormat) ?? string.Empty,
             new EquatableArray<ColumnModel>(columns),
             new EquatableArray<MethodParameterModel>([.. parameters]));
@@ -248,8 +260,10 @@ internal static class QueryMethodParser
     private static ColumnModel[] ParseColumns(
         ITypeSymbol rowType,
         INamedTypeSymbol? guidType,
-        Action<DiagnosticDescriptor, string[]> report)
+        Action<DiagnosticDescriptor, string[]> report,
+        out RowMappingKind mapping)
     {
+        mapping = RowMappingKind.Constructor;
         var rowTypeText = rowType.ToDisplayString();
 
         if (rowType is not INamedTypeSymbol named
@@ -260,17 +274,34 @@ internal static class QueryMethodParser
             return [];
         }
 
-        var constructors = named.InstanceConstructors
+        var parameterizedConstructors = named.InstanceConstructors
             .Where(ctor => ctor.DeclaredAccessibility == Accessibility.Public && ctor.Parameters.Length > 0)
             .ToArray();
-        if (constructors.Length != 1)
+        if (parameterizedConstructors.Length == 1)
         {
-            report(SqlQueryDiagnostics.UnsupportedRowType, [rowTypeText]);
-            return [];
+            return ParseConstructorColumns(parameterizedConstructors[0], rowTypeText, guidType, report);
         }
 
+        var hasParameterlessConstructor = named.InstanceConstructors.Any(
+            ctor => ctor.DeclaredAccessibility == Accessibility.Public && ctor.Parameters.Length == 0);
+        if (parameterizedConstructors.Length == 0 && hasParameterlessConstructor)
+        {
+            mapping = RowMappingKind.Properties;
+            return ParsePropertyColumns(named, rowTypeText, guidType, report);
+        }
+
+        report(SqlQueryDiagnostics.UnsupportedRowType, [rowTypeText]);
+        return [];
+    }
+
+    private static ColumnModel[] ParseConstructorColumns(
+        IMethodSymbol constructor,
+        string rowTypeText,
+        INamedTypeSymbol? guidType,
+        Action<DiagnosticDescriptor, string[]> report)
+    {
         var columns = new List<ColumnModel>();
-        foreach (var parameter in constructors[0].Parameters)
+        foreach (var parameter in constructor.Parameters)
         {
             if (!TryGetGetter(parameter.Type, guidType, out var getter))
             {
@@ -283,6 +314,50 @@ internal static class QueryMethodParser
                 parameter.Type.ToDisplayString(TypeTextFormat),
                 getter!,
                 IsNullable(parameter.Type)));
+        }
+
+        return [.. columns];
+    }
+
+    private static ColumnModel[] ParsePropertyColumns(
+        INamedTypeSymbol rowType,
+        string rowTypeText,
+        INamedTypeSymbol? guidType,
+        Action<DiagnosticDescriptor, string[]> report)
+    {
+        var columns = new List<ColumnModel>();
+        var seenNames = new HashSet<string>();
+        for (var type = rowType; type is not null && type.SpecialType != SpecialType.System_Object; type = type.BaseType)
+        {
+            foreach (var property in type.GetMembers().OfType<IPropertySymbol>())
+            {
+                if (property.IsStatic
+                    || property.IsIndexer
+                    || property.DeclaredAccessibility != Accessibility.Public
+                    || property.SetMethod is not { DeclaredAccessibility: Accessibility.Public }
+                    || !seenNames.Add(property.Name))
+                {
+                    continue;
+                }
+
+                if (!TryGetGetter(property.Type, guidType, out var getter))
+                {
+                    report(SqlQueryDiagnostics.UnsupportedRowType, [rowTypeText]);
+                    return [];
+                }
+
+                columns.Add(new ColumnModel(
+                    property.Name,
+                    property.Type.ToDisplayString(TypeTextFormat),
+                    getter!,
+                    IsNullable(property.Type)));
+            }
+        }
+
+        if (columns.Count == 0)
+        {
+            report(SqlQueryDiagnostics.UnsupportedRowType, [rowTypeText]);
+            return [];
         }
 
         return [.. columns];

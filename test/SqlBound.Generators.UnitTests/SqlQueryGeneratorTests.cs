@@ -142,6 +142,51 @@ public class SqlQueryGeneratorTests
     }
 
     [Fact]
+    public void Should_ReportSqlb005_When_SettablePropertyTypeIsUnsupported()
+    {
+        const string source = Prelude + """
+            public sealed class Exotic
+            {
+                public int Id { get; set; }
+                public object? Payload { get; set; }
+            }
+
+            public static partial class ItemQueries
+            {
+                [SqlQuery("SELECT id, payload FROM exotics")]
+                public static partial Task<IReadOnlyList<Exotic>> GetExoticsAsync(DbConnection connection);
+            }
+            """;
+
+        var outcome = GeneratorHarness.Run(source);
+
+        var diagnostic = Assert.Single(outcome.GeneratorDiagnostics);
+        Assert.Equal("SQLB005", diagnostic.Id);
+    }
+
+    [Fact]
+    public void Should_ReportSqlb005_When_RowTypeHasNoMappableMembers()
+    {
+        const string source = Prelude + """
+            public sealed class Opaque
+            {
+                public int Id { get; }
+            }
+
+            public static partial class ItemQueries
+            {
+                [SqlQuery("SELECT id FROM opaques")]
+                public static partial Task<IReadOnlyList<Opaque>> GetOpaquesAsync(DbConnection connection);
+            }
+            """;
+
+        var outcome = GeneratorHarness.Run(source);
+
+        var diagnostic = Assert.Single(outcome.GeneratorDiagnostics);
+        Assert.Equal("SQLB005", diagnostic.Id);
+    }
+
+    [Fact]
     public void Should_ReportSqlb006_When_QueryParameterTypeIsUnsupported()
     {
         const string source = Prelude + """

@@ -283,6 +283,19 @@ internal static class QueryMethodEmitter
     private static void EmitRowConstruction(
         QueryMethodModel model, int depth, Action<int, string> line, string prefix, string suffix)
     {
+        if (model.RowMapping == RowMappingKind.Properties)
+        {
+            line(depth, $"{prefix}new {model.RowTypeText}");
+            line(depth, "{");
+            for (var i = 0; i < model.Columns.Count; i++)
+            {
+                line(depth + 1, $"{model.Columns[i].Name} = {ReadColumn(model.Columns[i], i)},");
+            }
+
+            line(depth, "}" + suffix);
+            return;
+        }
+
         line(depth, $"{prefix}new {model.RowTypeText}(");
         for (var i = 0; i < model.Columns.Count; i++)
         {

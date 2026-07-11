@@ -42,7 +42,7 @@ internal static class SqlQueryDiagnostics
     public static readonly DiagnosticDescriptor UnsupportedRowType = new(
         "SQLB005",
         "Unsupported row type",
-        "Row type '{0}' must expose exactly one public constructor with at least one parameter, and every constructor parameter must be of a supported column type",
+        "Row type '{0}' must map columns through exactly one public constructor with parameters, or through public settable properties on a parameterless-constructible type, and every mapped member must be of a supported column type",
         Category,
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);

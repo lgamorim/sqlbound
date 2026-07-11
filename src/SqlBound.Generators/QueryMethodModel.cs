@@ -15,6 +15,7 @@ internal sealed record QueryMethodModel(
     string ReturnTypeText,
     ResultShape Shape,
     ResultElementKind ElementKind,
+    RowMappingKind RowMapping,
     string RowTypeText,
     EquatableArray<ColumnModel> Columns,
     EquatableArray<MethodParameterModel> Parameters);
@@ -28,6 +29,14 @@ internal enum ResultShape
     Stream,
     Execute,
     ExecuteDiscard,
+}
+
+/// <summary>How row columns reach the row instance: through the single parameterized public
+/// constructor, or through settable properties on a parameterless-constructible type.</summary>
+internal enum RowMappingKind
+{
+    Constructor,
+    Properties,
 }
 
 /// <summary>Whether the result element is a constructor-mapped row or a first-column scalar.

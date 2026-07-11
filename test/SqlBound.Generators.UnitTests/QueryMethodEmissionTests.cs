@@ -299,6 +299,119 @@ public class QueryMethodEmissionTests
     }
 
     [Fact]
+    public void Should_MapSettableProperties_When_RowTypeHasParameterlessConstructor()
+    {
+        const string source = Prelude + """
+            public sealed class Widget
+            {
+                public int Id { get; set; }
+                public string Name { get; set; } = "";
+                public decimal? Price { get; set; }
+            }
+
+            public static partial class WidgetQueries
+            {
+                [SqlQuery("SELECT id, name, price FROM widgets")]
+                public static partial Task<IReadOnlyList<Widget>> GetAllAsync(
+                    DbConnection connection, CancellationToken cancellationToken = default);
+            }
+            """;
+
+        var outcome = GeneratorHarness.Run(source);
+
+        AssertCompilesClean(outcome);
+        var generated = Assert.Single(outcome.GeneratedSources).SourceText.ToString();
+        Assert.Contains("new global::App.Widget", generated);
+        Assert.Contains("Id = ", generated);
+        Assert.Contains("""GetOrdinal("Name")""", generated);
+    }
+
+    [Fact]
+    public void Should_MapInitOnlyProperties_When_RowTypeUsesInitSetters()
+    {
+        const string source = Prelude + """
+            public sealed record Widget
+            {
+                public int Id { get; init; }
+                public string? Name { get; init; }
+            }
+
+            public static partial class WidgetQueries
+            {
+                [SqlQuery("SELECT id, name FROM widgets")]
+                public static partial Task<IReadOnlyList<Widget>> GetAllAsync(
+                    DbConnection connection, CancellationToken cancellationToken = default);
+            }
+            """;
+
+        var outcome = GeneratorHarness.Run(source);
+
+        AssertCompilesClean(outcome);
+    }
+
+    [Fact]
+    public void Should_MapInheritedSettableProperties_When_RowTypeDerivesFromBase()
+    {
+        const string source = Prelude + """
+            public abstract class Entity
+            {
+                public int Id { get; set; }
+            }
+
+            public sealed class Widget : Entity
+            {
+                public string Name { get; set; } = "";
+            }
+
+            public static partial class WidgetQueries
+            {
+                [SqlQuery("SELECT id, name FROM widgets")]
+                public static partial Task<IReadOnlyList<Widget>> GetAllAsync(
+                    DbConnection connection, CancellationToken cancellationToken = default);
+            }
+            """;
+
+        var outcome = GeneratorHarness.Run(source);
+
+        AssertCompilesClean(outcome);
+        var generated = Assert.Single(outcome.GeneratedSources).SourceText.ToString();
+        Assert.Contains("""GetOrdinal("Id")""", generated);
+        Assert.Contains("""GetOrdinal("Name")""", generated);
+    }
+
+    [Fact]
+    public void Should_PreferConstructorMapping_When_RowTypeHasBothConstructorAndSettableProperties()
+    {
+        const string source = Prelude + """
+            public sealed class Widget
+            {
+                public Widget(int id, string name)
+                {
+                    Id = id;
+                    Name = name;
+                }
+
+                public int Id { get; set; }
+                public string Name { get; set; }
+            }
+
+            public static partial class WidgetQueries
+            {
+                [SqlQuery("SELECT id, name FROM widgets")]
+                public static partial Task<IReadOnlyList<Widget>> GetAllAsync(
+                    DbConnection connection, CancellationToken cancellationToken = default);
+            }
+            """;
+
+        var outcome = GeneratorHarness.Run(source);
+
+        AssertCompilesClean(outcome);
+        var generated = Assert.Single(outcome.GeneratedSources).SourceText.ToString();
+        Assert.Contains("new global::App.Widget(", generated);
+        Assert.DoesNotContain("Id = ", generated);
+    }
+
+    [Fact]
     public void Should_EmitSingleImplementationFile_When_MethodIsWellFormed()
     {
         var outcome = GeneratorHarness.Run(CanonicalSource);
