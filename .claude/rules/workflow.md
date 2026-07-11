@@ -10,5 +10,6 @@
 - Merge by squash so each feature arrives as a single logical commit on the default branch, consistent with the "one logical change per commit" rule above; the squash commit message keeps the imperative, *why*-focused form.
 - Versioning follows semantic versioning: each phase gets its own minor version (Phase 1 → `0.1.x`, Phase 2 → `0.2.x`, …; Phase 6 ships `1.0.0`).
 - When a phase completes, tag it on the default branch with an annotated tag (e.g., `git tag -a v0.1.0 -m "..."`) and push the tag to GitHub for reference.
+- `PackageVersion` carries a prerelease suffix (`X.Y.0-preview.N`) during a phase's active development. Closing the phase drops the suffix to the clean `X.Y.0` in the same commit that gets tagged, so the tag always matches the package version it marks exactly. The next phase's first commit starts the new prerelease line (`X.(Y+1).0-preview.1`).
 - Each roadmap milestone has a matching GitHub milestone (created per phase); the milestone's PR is associated on creation and the milestone closed on merge.
 - Update this file when a new convention or correction is established.
