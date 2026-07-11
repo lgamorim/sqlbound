@@ -117,6 +117,27 @@ internal static class QueryMethodEmitter
             scalarIndex++;
         }
 
+        if (model.Shape is ResultShape.Execute or ResultShape.ExecuteDiscard)
+        {
+            var keyword = model.Shape == ResultShape.Execute ? "return await" : "await";
+            line(depth + 2, $"{keyword} __command.ExecuteNonQueryAsync({cancellationToken}).ConfigureAwait(false);");
+        }
+        else
+        {
+            EmitReaderBlock(model, depth, line, cancellationToken);
+        }
+
+        line(depth + 1, "}");
+        line(depth + 1, "finally");
+        line(depth + 1, "{");
+        line(depth + 2, "await __command.DisposeAsync().ConfigureAwait(false);");
+        line(depth + 1, "}");
+        line(depth, "}");
+    }
+
+    private static void EmitReaderBlock(
+        QueryMethodModel model, int depth, Action<int, string> line, string cancellationToken)
+    {
         line(depth + 2, "global::System.Data.Common.DbDataReader __reader = "
             + $"await __command.ExecuteReaderAsync({cancellationToken}).ConfigureAwait(false);");
         line(depth + 2, "try");
@@ -159,12 +180,6 @@ internal static class QueryMethodEmitter
         line(depth + 2, "{");
         line(depth + 3, "await __reader.DisposeAsync().ConfigureAwait(false);");
         line(depth + 2, "}");
-        line(depth + 1, "}");
-        line(depth + 1, "finally");
-        line(depth + 1, "{");
-        line(depth + 2, "await __command.DisposeAsync().ConfigureAwait(false);");
-        line(depth + 1, "}");
-        line(depth, "}");
     }
 
     private static void EmitRowListRead(

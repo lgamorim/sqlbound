@@ -25,6 +25,8 @@ internal enum ResultShape
     RowList,
     SingleRow,
     OptionalRow,
+    Execute,
+    ExecuteDiscard,
 }
 
 /// <summary>Whether the result element is a constructor-mapped row or a first-column scalar.

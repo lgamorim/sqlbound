@@ -14,16 +14,30 @@ internal static class QueryMethodParser
         SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(
             SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
 
-    public static SqlQueryPipelineResult Parse(GeneratorAttributeSyntaxContext context)
+    public static SqlQueryPipelineResult Parse(GeneratorAttributeSyntaxContext context, bool isExecute)
     {
         var symbol = (IMethodSymbol)context.TargetSymbol;
         var syntax = (MethodDeclarationSyntax)context.TargetNode;
         var location = LocationInfo.From(syntax.Identifier.GetLocation());
         var compilation = context.SemanticModel.Compilation;
+        var attributeName = isExecute ? "SqlExecute" : "SqlQuery";
         var diagnostics = new List<DiagnosticInfo>();
 
         void Report(DiagnosticDescriptor descriptor, params string[] args) =>
             diagnostics.Add(new DiagnosticInfo(descriptor, location, new EquatableArray<string>(args)));
+
+        var otherAttributeName = isExecute ? "SqlBound.SqlQueryAttribute" : "SqlBound.SqlExecuteAttribute";
+        if (symbol.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == otherAttributeName))
+        {
+            // Both pipelines see such a method; only the execute one reports, so the
+            // diagnostic appears exactly once and no source is generated.
+            if (isExecute)
+            {
+                Report(SqlQueryDiagnostics.MethodMustNotCarryBothAttributes, symbol.Name);
+            }
+
+            return new SqlQueryPipelineResult(null, new EquatableArray<DiagnosticInfo>([.. diagnostics]));
+        }
 
         var constructorArguments = context.Attributes[0].ConstructorArguments;
         var commandText = constructorArguments.Length == 1 ? constructorArguments[0].Value as string : null;
@@ -37,17 +51,17 @@ internal static class QueryMethodParser
             && syntax.ExpressionBody is null;
         if (!isPartialDefinition || symbol.PartialImplementationPart is not null)
         {
-            Report(SqlQueryDiagnostics.MethodMustBePartialDefinition, symbol.Name);
+            Report(SqlQueryDiagnostics.MethodMustBePartialDefinition, symbol.Name, attributeName);
         }
 
         if (!symbol.IsStatic)
         {
-            Report(SqlQueryDiagnostics.MethodMustBeStatic, symbol.Name);
+            Report(SqlQueryDiagnostics.MethodMustBeStatic, symbol.Name, attributeName);
         }
 
         if (symbol.Arity > 0 || ContainingTypeChain(symbol).Any(type => type.Arity > 0))
         {
-            Report(SqlQueryDiagnostics.GenericDeclarationsNotSupported, symbol.Name);
+            Report(SqlQueryDiagnostics.GenericDeclarationsNotSupported, symbol.Name, attributeName);
         }
 
         var dbConnectionType = compilation.GetTypeByMetadataName("System.Data.Common.DbConnection");
@@ -59,7 +73,7 @@ internal static class QueryMethodParser
         var methodParameters = symbol.Parameters;
         if (methodParameters.Length == 0 || !DerivesFrom(methodParameters[0].Type, dbConnectionType))
         {
-            Report(SqlQueryDiagnostics.MethodMustTakeDbConnectionFirst, symbol.Name);
+            Report(SqlQueryDiagnostics.MethodMustTakeDbConnectionFirst, symbol.Name, attributeName);
         }
         else
         {
@@ -101,7 +115,25 @@ internal static class QueryMethodParser
         ColumnModel? scalarColumn = null;
         var shape = ResultShape.RowList;
         var elementKind = ResultElementKind.Row;
-        if (symbol.ReturnType is INamedTypeSymbol task
+        if (isExecute)
+        {
+            var plainTaskType = compilation.GetTypeByMetadataName("System.Threading.Tasks.Task");
+            if (SymbolEqualityComparer.Default.Equals(symbol.ReturnType, plainTaskType))
+            {
+                shape = ResultShape.ExecuteDiscard;
+            }
+            else if (symbol.ReturnType is INamedTypeSymbol executeTask
+                && SymbolEqualityComparer.Default.Equals(executeTask.OriginalDefinition, taskType)
+                && executeTask.TypeArguments[0].SpecialType == SpecialType.System_Int32)
+            {
+                shape = ResultShape.Execute;
+            }
+            else
+            {
+                Report(SqlQueryDiagnostics.UnsupportedExecuteReturnType, symbol.Name, symbol.ReturnType.ToDisplayString());
+            }
+        }
+        else if (symbol.ReturnType is INamedTypeSymbol task
             && SymbolEqualityComparer.Default.Equals(task.OriginalDefinition, taskType))
         {
             var payload = task.TypeArguments[0];
@@ -186,7 +218,7 @@ internal static class QueryMethodParser
             symbol.ReturnType.ToDisplayString(TypeTextFormat),
             shape,
             elementKind,
-            scalarColumn?.TypeText ?? rowType!.ToDisplayString(TypeTextFormat),
+            scalarColumn?.TypeText ?? rowType?.ToDisplayString(TypeTextFormat) ?? string.Empty,
             new EquatableArray<ColumnModel>(columns),
             new EquatableArray<MethodParameterModel>([.. parameters]));
         return new SqlQueryPipelineResult(model, EquatableArray<DiagnosticInfo>.Empty);

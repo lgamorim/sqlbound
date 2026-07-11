@@ -12,4 +12,6 @@ SQLB004 | SqlBound.Usage | Error | [SqlQuery] method must return Task&lt;IReadOn
 SQLB005 | SqlBound.Usage | Error | Row type must have one public constructor with supported column types
 SQLB006 | SqlBound.Usage | Error | Query parameter type is not supported
 SQLB007 | SqlBound.Usage | Error | [SqlQuery] command text must not be empty
-SQLB008 | SqlBound.Usage | Error | [SqlQuery] method must not be generic or nested in a generic type
+SQLB008 | SqlBound.Usage | Error | [SqlQuery]/[SqlExecute] method must not be generic or nested in a generic type
+SQLB009 | SqlBound.Usage | Error | [SqlExecute] method must return Task or Task&lt;int&gt;
+SQLB010 | SqlBound.Usage | Error | A method cannot carry both [SqlQuery] and [SqlExecute]
