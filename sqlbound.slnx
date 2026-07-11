@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/bench/">
+    <Project Path="bench/SqlBound.Benchmarks/SqlBound.Benchmarks.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/SqlBound.Generators/SqlBound.Generators.csproj" />
     <Project Path="src/SqlBound/SqlBound.csproj" />

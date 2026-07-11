@@ -1,0 +1,11 @@
+<Project>
+
+  <!--
+    Deliberately empty and deliberately NOT importing the repository root Directory.Build.props:
+    BenchmarkDotNet generates throwaway host projects under bin/ at run time, and the root
+    defaults (net8.0;net10.0 multi-targeting, TreatWarningsAsErrors, doc-file generation) break
+    those generated projects. This file stops MSBuild's upward search so generated projects build
+    the way BenchmarkDotNet expects; SqlBound.Benchmarks.csproj redeclares the settings it needs.
+  -->
+
+</Project>
