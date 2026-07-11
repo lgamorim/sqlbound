@@ -79,6 +79,11 @@ internal static class QueryMethodEmitter
         foreach (var parameter in model.Parameters)
         {
             var prefix = model.IsExtensionMethod && signatureParameters.Count == 0 ? "this " : "";
+            if (model.Shape == ResultShape.Stream && parameter.Kind == ParameterKind.CancellationToken)
+            {
+                prefix += "[global::System.Runtime.CompilerServices.EnumeratorCancellation] ";
+            }
+
             signatureParameters.Add($"{prefix}{parameter.TypeText} {parameter.Name}");
         }
 
@@ -170,6 +175,9 @@ internal static class QueryMethodEmitter
             case (ResultShape.OptionalRow, ResultElementKind.Scalar):
                 EmitScalarSingleRead(model, depth + 3, line, cancellationToken, optional: true);
                 break;
+            case (ResultShape.Stream, _):
+                EmitStreamRead(model, depth + 3, line, cancellationToken);
+                break;
             default:
                 throw new InvalidOperationException(
                     $"Unknown result shape '{model.Shape}'/'{model.ElementKind}'.");
@@ -213,6 +221,23 @@ internal static class QueryMethodEmitter
         line(depth, "}");
         line(depth, "");
         line(depth, "return __row;");
+    }
+
+    private static void EmitStreamRead(
+        QueryMethodModel model, int depth, Action<int, string> line, string cancellationToken)
+    {
+        line(depth, $"while (await __reader.ReadAsync({cancellationToken}).ConfigureAwait(false))");
+        line(depth, "{");
+        if (model.ElementKind == ResultElementKind.Scalar)
+        {
+            line(depth + 1, $"yield return {ReadScalar(model.Columns[0])};");
+        }
+        else
+        {
+            EmitRowConstruction(model, depth + 1, line, "yield return ", ";");
+        }
+
+        line(depth, "}");
     }
 
     private static void EmitScalarListRead(

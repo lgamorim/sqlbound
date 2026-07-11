@@ -25,6 +25,7 @@ internal enum ResultShape
     RowList,
     SingleRow,
     OptionalRow,
+    Stream,
     Execute,
     ExecuteDiscard,
 }

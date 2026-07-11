@@ -241,6 +241,64 @@ public class QueryMethodEmissionTests
     }
 
     [Fact]
+    public void Should_EmitAsyncIteratorWithEnumeratorCancellation_When_ReturnTypeIsAsyncEnumerableOfRow()
+    {
+        const string source = Prelude + """
+            public static partial class ItemQueries
+            {
+                [SqlQuery("SELECT id, name, price FROM items")]
+                public static partial IAsyncEnumerable<Item> StreamAsync(
+                    DbConnection connection, CancellationToken cancellationToken = default);
+            }
+            """;
+
+        var outcome = GeneratorHarness.Run(source);
+
+        AssertCompilesClean(outcome);
+        var generated = Assert.Single(outcome.GeneratedSources).SourceText.ToString();
+        Assert.Contains("yield return new global::App.Item(", generated);
+        Assert.Contains("[global::System.Runtime.CompilerServices.EnumeratorCancellation]", generated);
+    }
+
+    [Fact]
+    public void Should_EmitCompilableIterator_When_ReturnTypeIsAsyncEnumerableOfScalar()
+    {
+        const string source = Prelude + """
+            public static partial class ItemQueries
+            {
+                [SqlQuery("SELECT name FROM items")]
+                public static partial IAsyncEnumerable<string> StreamNamesAsync(
+                    DbConnection connection, CancellationToken cancellationToken = default);
+            }
+            """;
+
+        var outcome = GeneratorHarness.Run(source);
+
+        AssertCompilesClean(outcome);
+        var generated = Assert.Single(outcome.GeneratedSources).SourceText.ToString();
+        Assert.Contains("GetString(0)", generated);
+        Assert.Contains("yield return", generated);
+    }
+
+    [Fact]
+    public void Should_EmitCompilableIterator_When_StreamHasNoCancellationToken()
+    {
+        const string source = Prelude + """
+            public static partial class ItemQueries
+            {
+                [SqlQuery("SELECT id, name, price FROM items")]
+                public static partial IAsyncEnumerable<Item> StreamAsync(DbConnection connection);
+            }
+            """;
+
+        var outcome = GeneratorHarness.Run(source);
+
+        AssertCompilesClean(outcome);
+        var generated = Assert.Single(outcome.GeneratedSources).SourceText.ToString();
+        Assert.DoesNotContain("EnumeratorCancellation", generated);
+    }
+
+    [Fact]
     public void Should_EmitSingleImplementationFile_When_MethodIsWellFormed()
     {
         var outcome = GeneratorHarness.Run(CanonicalSource);

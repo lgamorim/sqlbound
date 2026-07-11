@@ -187,6 +187,27 @@ internal static class QueryMethodParser
                 }
             }
         }
+        else if (symbol.ReturnType is INamedTypeSymbol asyncEnumerable
+            && SymbolEqualityComparer.Default.Equals(
+                asyncEnumerable.OriginalDefinition,
+                compilation.GetTypeByMetadataName("System.Collections.Generic.IAsyncEnumerable`1")))
+        {
+            shape = ResultShape.Stream;
+            var streamElement = asyncEnumerable.TypeArguments[0];
+            if (TryGetGetter(streamElement, guidType, out var streamGetter))
+            {
+                elementKind = ResultElementKind.Scalar;
+                scalarColumn = new ColumnModel(
+                    string.Empty,
+                    streamElement.ToDisplayString(TypeTextFormat),
+                    streamGetter!,
+                    IsNullable(streamElement));
+            }
+            else
+            {
+                rowType = StripAnnotation(streamElement);
+            }
+        }
         else
         {
             Report(SqlQueryDiagnostics.UnsupportedReturnType, symbol.Name, symbol.ReturnType.ToDisplayString());
