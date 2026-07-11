@@ -63,9 +63,9 @@ public class QueryBenchmarks
         while (await reader.ReadAsync())
         {
             items.Add(new Item(
-                reader.GetInt32(idOrdinal),
+                reader.GetInt64(idOrdinal),
                 reader.GetString(nameOrdinal),
-                reader.IsDBNull(priceOrdinal) ? null : reader.GetDecimal(priceOrdinal)));
+                reader.IsDBNull(priceOrdinal) ? null : reader.GetDouble(priceOrdinal)));
         }
 
         return items;
@@ -94,9 +94,9 @@ public class QueryBenchmarks
         }
 
         return new Item(
-            reader.GetInt32(reader.GetOrdinal("Id")),
+            reader.GetInt64(reader.GetOrdinal("Id")),
             reader.GetString(reader.GetOrdinal("Name")),
-            reader.IsDBNull(reader.GetOrdinal("Price")) ? null : reader.GetDecimal(reader.GetOrdinal("Price")));
+            reader.IsDBNull(reader.GetOrdinal("Price")) ? null : reader.GetDouble(reader.GetOrdinal("Price")));
     }
 
     [Benchmark]

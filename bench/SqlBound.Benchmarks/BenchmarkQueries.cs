@@ -21,4 +21,6 @@ public static partial class BenchmarkQueries
         DbConnection connection, int id, decimal price, CancellationToken cancellationToken = default);
 }
 
-public sealed record Item(int Id, string Name, decimal? Price);
+// Uses SQLite's natural provider types (INTEGER => long, REAL => double) so all three contenders
+// do identical work: Dapper's constructor mapping requires exact type matches and cannot narrow.
+public sealed record Item(long Id, string Name, double? Price);
