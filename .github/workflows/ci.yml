@@ -42,3 +42,21 @@ jobs:
         with:
           name: nuget-packages
           path: artifacts/*.nupkg
+
+  aot-smoke-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Publish Native AOT smoke test
+        run: dotnet publish test/SqlBound.AotSmokeTest --configuration Release --runtime linux-x64
+
+      - name: Run Native AOT smoke test
+        run: ./test/SqlBound.AotSmokeTest/bin/Release/net10.0/linux-x64/publish/SqlBound.AotSmokeTest
