@@ -23,7 +23,8 @@ public static class SqlServerQueryDescriber
         ArgumentException.ThrowIfNullOrWhiteSpace(commandText);
 
         var columns = await DescribeColumnsAsync(connection, commandText, cancellationToken).ConfigureAwait(false);
-        return new QueryDescription(columns, []);
+        var parameters = await DescribeParametersAsync(connection, commandText, cancellationToken).ConfigureAwait(false);
+        return new QueryDescription(columns, parameters);
     }
 
     private static async Task<IReadOnlyList<DescribedColumn>> DescribeColumnsAsync(
@@ -80,6 +81,48 @@ public static class SqlServerQueryDescriber
                 }
 
                 return columns;
+            }
+        }
+    }
+
+    private static async Task<IReadOnlyList<DescribedParameter>> DescribeParametersAsync(
+        SqlConnection connection, string commandText, CancellationToken cancellationToken)
+    {
+        var command = connection.CreateCommand();
+        await using (command.ConfigureAwait(false))
+        {
+            command.CommandText = "sys.sp_describe_undeclared_parameters";
+            command.CommandType = CommandType.StoredProcedure;
+            command.Parameters.Add(new SqlParameter("@tsql", SqlDbType.NVarChar, -1) { Value = commandText });
+
+            var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            await using (reader.ConfigureAwait(false))
+            {
+                if (reader.FieldCount == 0)
+                {
+                    return [];
+                }
+
+                var nameOrdinal = reader.GetOrdinal("name");
+                var systemTypeNameOrdinal = reader.GetOrdinal("suggested_system_type_name");
+                var userTypeNameOrdinal = reader.GetOrdinal("suggested_user_type_name");
+
+                var parameters = new List<DescribedParameter>();
+                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    var name = reader.GetString(nameOrdinal).TrimStart('@');
+                    var sqlTypeName = ReadTypeName(reader, systemTypeNameOrdinal, userTypeNameOrdinal);
+                    if (!SqlServerTypeMap.TryMap(sqlTypeName, out var clrTypeText))
+                    {
+                        throw new SqlBoundDescribeException(
+                            $"Parameter '@{name}' has suggested SQL type '{sqlTypeName}', which SqlBound cannot bind.",
+                            commandText);
+                    }
+
+                    parameters.Add(new DescribedParameter(name, sqlTypeName, clrTypeText));
+                }
+
+                return parameters;
             }
         }
     }
