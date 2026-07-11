@@ -10,6 +10,8 @@ internal sealed class FakeDbConnection : DbConnection
 
     public int ExecuteNonQueryResult { get; set; }
 
+    public object? ExecuteScalarResult { get; set; }
+
     public Exception? ExecuteException { get; set; }
 
     public FakeDbCommand? LastCreatedCommand { get; private set; }
@@ -40,6 +42,7 @@ internal sealed class FakeDbConnection : DbConnection
         {
             Connection = this,
             ExecuteNonQueryResult = ExecuteNonQueryResult,
+            ExecuteScalarResult = ExecuteScalarResult,
             ExceptionToThrow = ExecuteException,
         };
 

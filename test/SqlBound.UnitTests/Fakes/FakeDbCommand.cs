@@ -21,6 +21,8 @@ internal sealed class FakeDbCommand : DbCommand
 
     public int ExecuteNonQueryResult { get; set; }
 
+    public object? ExecuteScalarResult { get; set; }
+
     public Exception? ExceptionToThrow { get; set; }
 
     public CancellationToken ReceivedCancellationToken { get; private set; }
@@ -62,7 +64,32 @@ internal sealed class FakeDbCommand : DbCommand
         return Task.FromResult(ExecuteNonQueryResult);
     }
 
-    public override object? ExecuteScalar() => throw new NotSupportedException();
+    public override object? ExecuteScalar()
+    {
+        if (ExceptionToThrow is not null)
+        {
+            throw ExceptionToThrow;
+        }
+
+        return ExecuteScalarResult;
+    }
+
+    public override Task<object?> ExecuteScalarAsync(CancellationToken cancellationToken)
+    {
+        ReceivedCancellationToken = cancellationToken;
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled<object?>(cancellationToken);
+        }
+
+        if (ExceptionToThrow is not null)
+        {
+            return Task.FromException<object?>(ExceptionToThrow);
+        }
+
+        return Task.FromResult(ExecuteScalarResult);
+    }
 
     public override void Prepare()
     {
