@@ -29,7 +29,7 @@
     as a build-time diagnostic (https://github.com/dotnet/roslyn/issues/41640); only the missing-doc-
     comment warning (CS1591) itself is suppressed.
   -->
-  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.UnitTests'))">
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
