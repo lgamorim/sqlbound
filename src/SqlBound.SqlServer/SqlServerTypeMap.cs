@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace SqlBound.SqlServer;
 
 /// <summary>
@@ -9,7 +11,7 @@ namespace SqlBound.SqlServer;
 /// </summary>
 internal static class SqlServerTypeMap
 {
-    public static bool TryMap(string sqlTypeName, out string? clrTypeText)
+    public static bool TryMap(string sqlTypeName, [NotNullWhen(true)] out string? clrTypeText)
     {
         var parenthesisIndex = sqlTypeName.IndexOf('(');
         var baseName = parenthesisIndex >= 0 ? sqlTypeName[..parenthesisIndex] : sqlTypeName;
