@@ -2,6 +2,11 @@
 
   <PropertyGroup>
     <Description>Compile-time verified SQL for .NET.</Description>
+    <!--
+      Enables the trim, single-file, and AOT analyzers (failing the build on any IL2xxx/IL3xxx
+      finding, since TreatWarningsAsErrors is on) and stamps the package as AOT-compatible.
+    -->
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
 </Project>
