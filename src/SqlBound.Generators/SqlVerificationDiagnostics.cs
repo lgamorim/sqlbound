@@ -12,6 +12,22 @@ internal static class SqlVerificationDiagnostics
 {
     private const string Category = "SqlBound.Verification";
 
+    public static readonly DiagnosticDescriptor QueryHasNoSnapshot = new(
+        "SQLB101",
+        "Query has no snapshot",
+        "No .sqlbound snapshot exists for the query in '{0}'; run the prepare step to describe it against the database",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor SnapshotInvalidOrStale = new(
+        "SQLB102",
+        "Snapshot is invalid or stale",
+        "Snapshot '{0}' is unreadable or no longer matches the query's command text; re-run the prepare step",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     public static readonly DiagnosticDescriptor StatementProducesNoResultSet = new(
         "SQLB103",
         "Statement produces no result set",
