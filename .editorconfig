@@ -95,3 +95,8 @@ dotnet_naming_rule.locals_and_parameters_should_be_camel_case.style = camel_case
 dotnet_naming_symbols.locals_and_parameters_symbol.applicable_kinds = parameter, local
 
 dotnet_naming_style.camel_case_style.capitalization = camel_case
+
+# Test methods follow testing.md's Should_ExpectedOutcome_When_Scenario convention instead of
+# the Async suffix rule above, even when they are themselves async.
+[test/**/*.cs]
+dotnet_naming_rule.async_methods_should_be_async_suffixed.severity = none
