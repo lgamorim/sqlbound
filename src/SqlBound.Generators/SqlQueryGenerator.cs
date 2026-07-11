@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace SqlBound.Generators;
 
@@ -14,6 +15,19 @@ public sealed class SqlQueryGenerator : IIncrementalGenerator
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // The [SqlQuery] pipeline is registered in the follow-up M4 commits.
+        var results = context.SyntaxProvider.ForAttributeWithMetadataName(
+            "SqlBound.SqlQueryAttribute",
+            static (node, _) => node is MethodDeclarationSyntax,
+            static (attributeContext, _) => QueryMethodParser.Parse(attributeContext));
+
+        context.RegisterSourceOutput(results, static (outputContext, result) =>
+        {
+            foreach (var diagnostic in result.Diagnostics)
+            {
+                outputContext.ReportDiagnostic(diagnostic.CreateDiagnostic());
+            }
+
+            // result.Method emission arrives in the next M4 commit.
+        });
     }
 }

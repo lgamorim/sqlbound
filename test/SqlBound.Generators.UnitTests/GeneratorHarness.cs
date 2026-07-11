@@ -17,7 +17,9 @@ internal static class GeneratorHarness
             "SqlBound.Generators.UnitTests.Target",
             [CSharpSyntaxTree.ParseText(source)],
             References,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            new CSharpCompilationOptions(
+                OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable));
 
         var driver = CSharpGeneratorDriver
             .Create(new SqlQueryGenerator())
