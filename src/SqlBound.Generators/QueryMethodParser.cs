@@ -14,12 +14,22 @@ internal static class QueryMethodParser
         SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(
             SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
 
-    public static SqlQueryPipelineResult Parse(GeneratorAttributeSyntaxContext context, bool isExecute)
+    public static SqlQueryPipelineResult Parse(GeneratorAttributeSyntaxContext context, bool isExecute) =>
+        Parse(
+            (IMethodSymbol)context.TargetSymbol,
+            (MethodDeclarationSyntax)context.TargetNode,
+            context.Attributes[0],
+            context.SemanticModel.Compilation,
+            isExecute);
+
+    public static SqlQueryPipelineResult Parse(
+        IMethodSymbol symbol,
+        MethodDeclarationSyntax syntax,
+        AttributeData attribute,
+        Compilation compilation,
+        bool isExecute)
     {
-        var symbol = (IMethodSymbol)context.TargetSymbol;
-        var syntax = (MethodDeclarationSyntax)context.TargetNode;
         var location = LocationInfo.From(syntax.Identifier.GetLocation());
-        var compilation = context.SemanticModel.Compilation;
         var attributeName = isExecute ? "SqlExecute" : "SqlQuery";
         var diagnostics = new List<DiagnosticInfo>();
 
@@ -39,7 +49,7 @@ internal static class QueryMethodParser
             return new SqlQueryPipelineResult(null, new EquatableArray<DiagnosticInfo>([.. diagnostics]));
         }
 
-        var constructorArguments = context.Attributes[0].ConstructorArguments;
+        var constructorArguments = attribute.ConstructorArguments;
         var commandText = constructorArguments.Length == 1 ? constructorArguments[0].Value as string : null;
         if (string.IsNullOrWhiteSpace(commandText))
         {

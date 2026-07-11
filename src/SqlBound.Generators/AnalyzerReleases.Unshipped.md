@@ -15,3 +15,14 @@ SQLB007 | SqlBound.Usage | Error | [SqlQuery] command text must not be empty
 SQLB008 | SqlBound.Usage | Error | [SqlQuery]/[SqlExecute] method must not be generic or nested in a generic type
 SQLB009 | SqlBound.Usage | Error | [SqlExecute] method must return Task or Task&lt;int&gt;
 SQLB010 | SqlBound.Usage | Error | A method cannot carry both [SqlQuery] and [SqlExecute]
+SQLB101 | SqlBound.Verification | Warning | Query has no .sqlbound snapshot (reported only once verification is opted in)
+SQLB102 | SqlBound.Verification | Warning | Snapshot file is unreadable or stale
+SQLB103 | SqlBound.Verification | Error | Statement produces no result set but the method expects one
+SQLB104 | SqlBound.Verification | Error | Result set has no column with the declared name
+SQLB105 | SqlBound.Verification | Error | Column CLR type differs from the declaration
+SQLB106 | SqlBound.Verification | Error | Database column is nullable but declared non-nullable
+SQLB107 | SqlBound.Verification | Info | Result set returns columns the method never reads
+SQLB108 | SqlBound.Verification | Error | Statement uses a parameter the method does not declare
+SQLB109 | SqlBound.Verification | Warning | Method declares a scalar parameter the statement never uses
+SQLB110 | SqlBound.Verification | Error | Parameter CLR type differs from the declaration
+SQLB111 | SqlBound.Verification | Warning | [SqlExecute] statement returns a result set it discards
