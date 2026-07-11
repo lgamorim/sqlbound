@@ -14,16 +14,30 @@ internal static class QueryMethodParser
         SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(
             SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
 
-    public static SqlQueryPipelineResult Parse(GeneratorAttributeSyntaxContext context)
+    public static SqlQueryPipelineResult Parse(GeneratorAttributeSyntaxContext context, bool isExecute)
     {
         var symbol = (IMethodSymbol)context.TargetSymbol;
         var syntax = (MethodDeclarationSyntax)context.TargetNode;
         var location = LocationInfo.From(syntax.Identifier.GetLocation());
         var compilation = context.SemanticModel.Compilation;
+        var attributeName = isExecute ? "SqlExecute" : "SqlQuery";
         var diagnostics = new List<DiagnosticInfo>();
 
         void Report(DiagnosticDescriptor descriptor, params string[] args) =>
             diagnostics.Add(new DiagnosticInfo(descriptor, location, new EquatableArray<string>(args)));
+
+        var otherAttributeName = isExecute ? "SqlBound.SqlQueryAttribute" : "SqlBound.SqlExecuteAttribute";
+        if (symbol.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == otherAttributeName))
+        {
+            // Both pipelines see such a method; only the execute one reports, so the
+            // diagnostic appears exactly once and no source is generated.
+            if (isExecute)
+            {
+                Report(SqlQueryDiagnostics.MethodMustNotCarryBothAttributes, symbol.Name);
+            }
+
+            return new SqlQueryPipelineResult(null, new EquatableArray<DiagnosticInfo>([.. diagnostics]));
+        }
 
         var constructorArguments = context.Attributes[0].ConstructorArguments;
         var commandText = constructorArguments.Length == 1 ? constructorArguments[0].Value as string : null;
@@ -37,17 +51,17 @@ internal static class QueryMethodParser
             && syntax.ExpressionBody is null;
         if (!isPartialDefinition || symbol.PartialImplementationPart is not null)
         {
-            Report(SqlQueryDiagnostics.MethodMustBePartialDefinition, symbol.Name);
+            Report(SqlQueryDiagnostics.MethodMustBePartialDefinition, symbol.Name, attributeName);
         }
 
         if (!symbol.IsStatic)
         {
-            Report(SqlQueryDiagnostics.MethodMustBeStatic, symbol.Name);
+            Report(SqlQueryDiagnostics.MethodMustBeStatic, symbol.Name, attributeName);
         }
 
         if (symbol.Arity > 0 || ContainingTypeChain(symbol).Any(type => type.Arity > 0))
         {
-            Report(SqlQueryDiagnostics.GenericDeclarationsNotSupported, symbol.Name);
+            Report(SqlQueryDiagnostics.GenericDeclarationsNotSupported, symbol.Name, attributeName);
         }
 
         var dbConnectionType = compilation.GetTypeByMetadataName("System.Data.Common.DbConnection");
@@ -59,7 +73,7 @@ internal static class QueryMethodParser
         var methodParameters = symbol.Parameters;
         if (methodParameters.Length == 0 || !DerivesFrom(methodParameters[0].Type, dbConnectionType))
         {
-            Report(SqlQueryDiagnostics.MethodMustTakeDbConnectionFirst, symbol.Name);
+            Report(SqlQueryDiagnostics.MethodMustTakeDbConnectionFirst, symbol.Name, attributeName);
         }
         else
         {
@@ -98,19 +112,121 @@ internal static class QueryMethodParser
         var taskType = compilation.GetTypeByMetadataName("System.Threading.Tasks.Task`1");
         var readOnlyListType = compilation.GetTypeByMetadataName("System.Collections.Generic.IReadOnlyList`1");
         ITypeSymbol? rowType = null;
-        if (symbol.ReturnType is INamedTypeSymbol task
-            && SymbolEqualityComparer.Default.Equals(task.OriginalDefinition, taskType)
-            && task.TypeArguments[0] is INamedTypeSymbol list
-            && SymbolEqualityComparer.Default.Equals(list.OriginalDefinition, readOnlyListType))
+        ColumnModel? scalarColumn = null;
+        var shape = ResultShape.RowList;
+        var elementKind = ResultElementKind.Row;
+        if (isExecute)
         {
-            rowType = list.TypeArguments[0];
+            var plainTaskType = compilation.GetTypeByMetadataName("System.Threading.Tasks.Task");
+            if (SymbolEqualityComparer.Default.Equals(symbol.ReturnType, plainTaskType))
+            {
+                shape = ResultShape.ExecuteDiscard;
+            }
+            else if (symbol.ReturnType is INamedTypeSymbol executeTask
+                && SymbolEqualityComparer.Default.Equals(executeTask.OriginalDefinition, taskType)
+                && executeTask.TypeArguments[0].SpecialType == SpecialType.System_Int32)
+            {
+                shape = ResultShape.Execute;
+            }
+            else
+            {
+                Report(SqlQueryDiagnostics.UnsupportedExecuteReturnType, symbol.Name, symbol.ReturnType.ToDisplayString());
+            }
+        }
+        else if (symbol.ReturnType is INamedTypeSymbol task
+            && SymbolEqualityComparer.Default.Equals(task.OriginalDefinition, taskType))
+        {
+            var payload = task.TypeArguments[0];
+            if (payload is INamedTypeSymbol list
+                && SymbolEqualityComparer.Default.Equals(list.OriginalDefinition, readOnlyListType))
+            {
+                shape = ResultShape.RowList;
+                var listElement = list.TypeArguments[0];
+                if (TryGetGetter(listElement, guidType, out var listGetter))
+                {
+                    elementKind = ResultElementKind.Scalar;
+                    scalarColumn = new ColumnModel(
+                        string.Empty,
+                        listElement.ToDisplayString(TypeTextFormat),
+                        listGetter!,
+                        IsNullable(listElement));
+                }
+                else
+                {
+                    rowType = StripAnnotation(listElement);
+                }
+            }
+            else
+            {
+                var isOptional = false;
+                var element = payload;
+                if (payload is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullablePayload)
+                {
+                    isOptional = true;
+                    element = nullablePayload.TypeArguments[0];
+                }
+                else if (payload.IsReferenceType && payload.NullableAnnotation == NullableAnnotation.Annotated)
+                {
+                    isOptional = true;
+                    element = StripAnnotation(payload);
+                }
+
+                shape = isOptional ? ResultShape.OptionalRow : ResultShape.SingleRow;
+                if (TryGetGetter(element, guidType, out var scalarGetter))
+                {
+                    elementKind = ResultElementKind.Scalar;
+                    scalarColumn = new ColumnModel(
+                        string.Empty,
+                        payload.ToDisplayString(TypeTextFormat),
+                        scalarGetter!,
+                        isOptional);
+                }
+                else
+                {
+                    rowType = element;
+                }
+            }
+        }
+        else if (symbol.ReturnType is INamedTypeSymbol asyncEnumerable
+            && SymbolEqualityComparer.Default.Equals(
+                asyncEnumerable.OriginalDefinition,
+                compilation.GetTypeByMetadataName("System.Collections.Generic.IAsyncEnumerable`1")))
+        {
+            shape = ResultShape.Stream;
+            var streamElement = asyncEnumerable.TypeArguments[0];
+            if (TryGetGetter(streamElement, guidType, out var streamGetter))
+            {
+                elementKind = ResultElementKind.Scalar;
+                scalarColumn = new ColumnModel(
+                    string.Empty,
+                    streamElement.ToDisplayString(TypeTextFormat),
+                    streamGetter!,
+                    IsNullable(streamElement));
+            }
+            else
+            {
+                rowType = StripAnnotation(streamElement);
+            }
         }
         else
         {
             Report(SqlQueryDiagnostics.UnsupportedReturnType, symbol.Name, symbol.ReturnType.ToDisplayString());
         }
 
-        ColumnModel[] columns = rowType is null ? [] : ParseColumns(rowType, guidType, Report);
+        var rowMapping = RowMappingKind.Constructor;
+        ColumnModel[] columns;
+        if (scalarColumn is not null)
+        {
+            columns = [scalarColumn];
+        }
+        else if (rowType is not null)
+        {
+            columns = ParseColumns(rowType, guidType, Report, out rowMapping);
+        }
+        else
+        {
+            columns = [];
+        }
 
         if (diagnostics.Count > 0)
         {
@@ -131,7 +247,11 @@ internal static class QueryMethodParser
             symbol.Name,
             symbol.IsExtensionMethod,
             commandText!,
-            rowType!.ToDisplayString(TypeTextFormat),
+            symbol.ReturnType.ToDisplayString(TypeTextFormat),
+            shape,
+            elementKind,
+            rowMapping,
+            scalarColumn?.TypeText ?? rowType?.ToDisplayString(TypeTextFormat) ?? string.Empty,
             new EquatableArray<ColumnModel>(columns),
             new EquatableArray<MethodParameterModel>([.. parameters]));
         return new SqlQueryPipelineResult(model, EquatableArray<DiagnosticInfo>.Empty);
@@ -140,8 +260,10 @@ internal static class QueryMethodParser
     private static ColumnModel[] ParseColumns(
         ITypeSymbol rowType,
         INamedTypeSymbol? guidType,
-        Action<DiagnosticDescriptor, string[]> report)
+        Action<DiagnosticDescriptor, string[]> report,
+        out RowMappingKind mapping)
     {
+        mapping = RowMappingKind.Constructor;
         var rowTypeText = rowType.ToDisplayString();
 
         if (rowType is not INamedTypeSymbol named
@@ -152,17 +274,34 @@ internal static class QueryMethodParser
             return [];
         }
 
-        var constructors = named.InstanceConstructors
+        var parameterizedConstructors = named.InstanceConstructors
             .Where(ctor => ctor.DeclaredAccessibility == Accessibility.Public && ctor.Parameters.Length > 0)
             .ToArray();
-        if (constructors.Length != 1)
+        if (parameterizedConstructors.Length == 1)
         {
-            report(SqlQueryDiagnostics.UnsupportedRowType, [rowTypeText]);
-            return [];
+            return ParseConstructorColumns(parameterizedConstructors[0], rowTypeText, guidType, report);
         }
 
+        var hasParameterlessConstructor = named.InstanceConstructors.Any(
+            ctor => ctor.DeclaredAccessibility == Accessibility.Public && ctor.Parameters.Length == 0);
+        if (parameterizedConstructors.Length == 0 && hasParameterlessConstructor)
+        {
+            mapping = RowMappingKind.Properties;
+            return ParsePropertyColumns(named, rowTypeText, guidType, report);
+        }
+
+        report(SqlQueryDiagnostics.UnsupportedRowType, [rowTypeText]);
+        return [];
+    }
+
+    private static ColumnModel[] ParseConstructorColumns(
+        IMethodSymbol constructor,
+        string rowTypeText,
+        INamedTypeSymbol? guidType,
+        Action<DiagnosticDescriptor, string[]> report)
+    {
         var columns = new List<ColumnModel>();
-        foreach (var parameter in constructors[0].Parameters)
+        foreach (var parameter in constructor.Parameters)
         {
             if (!TryGetGetter(parameter.Type, guidType, out var getter))
             {
@@ -175,6 +314,50 @@ internal static class QueryMethodParser
                 parameter.Type.ToDisplayString(TypeTextFormat),
                 getter!,
                 IsNullable(parameter.Type)));
+        }
+
+        return [.. columns];
+    }
+
+    private static ColumnModel[] ParsePropertyColumns(
+        INamedTypeSymbol rowType,
+        string rowTypeText,
+        INamedTypeSymbol? guidType,
+        Action<DiagnosticDescriptor, string[]> report)
+    {
+        var columns = new List<ColumnModel>();
+        var seenNames = new HashSet<string>();
+        for (var type = rowType; type is not null && type.SpecialType != SpecialType.System_Object; type = type.BaseType)
+        {
+            foreach (var property in type.GetMembers().OfType<IPropertySymbol>())
+            {
+                if (property.IsStatic
+                    || property.IsIndexer
+                    || property.DeclaredAccessibility != Accessibility.Public
+                    || property.SetMethod is not { DeclaredAccessibility: Accessibility.Public }
+                    || !seenNames.Add(property.Name))
+                {
+                    continue;
+                }
+
+                if (!TryGetGetter(property.Type, guidType, out var getter))
+                {
+                    report(SqlQueryDiagnostics.UnsupportedRowType, [rowTypeText]);
+                    return [];
+                }
+
+                columns.Add(new ColumnModel(
+                    property.Name,
+                    property.Type.ToDisplayString(TypeTextFormat),
+                    getter!,
+                    IsNullable(property.Type)));
+            }
+        }
+
+        if (columns.Count == 0)
+        {
+            report(SqlQueryDiagnostics.UnsupportedRowType, [rowTypeText]);
+            return [];
         }
 
         return [.. columns];
@@ -206,6 +389,11 @@ internal static class QueryMethodParser
     private static bool IsNullable(ITypeSymbol type) =>
         type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
         || (type.IsReferenceType && type.NullableAnnotation == NullableAnnotation.Annotated);
+
+    private static ITypeSymbol StripAnnotation(ITypeSymbol type) =>
+        type.IsReferenceType && type.NullableAnnotation == NullableAnnotation.Annotated
+            ? type.WithNullableAnnotation(NullableAnnotation.NotAnnotated)
+            : type;
 
     private static ITypeSymbol StripNullable(ITypeSymbol type) =>
         type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable

@@ -74,17 +74,20 @@ internal static class QueryMethodEmitter
         var transaction = ParameterNameOrNull(model, ParameterKind.Transaction);
         var cancellationToken = ParameterNameOrNull(model, ParameterKind.CancellationToken)
             ?? "global::System.Threading.CancellationToken.None";
-        var returnType = "global::System.Threading.Tasks.Task<"
-            + $"global::System.Collections.Generic.IReadOnlyList<{model.RowTypeText}>>";
 
         var signatureParameters = new List<string>();
         foreach (var parameter in model.Parameters)
         {
             var prefix = model.IsExtensionMethod && signatureParameters.Count == 0 ? "this " : "";
+            if (model.Shape == ResultShape.Stream && parameter.Kind == ParameterKind.CancellationToken)
+            {
+                prefix += "[global::System.Runtime.CompilerServices.EnumeratorCancellation] ";
+            }
+
             signatureParameters.Add($"{prefix}{parameter.TypeText} {parameter.Name}");
         }
 
-        line(depth, $"{model.Accessibility} static async partial {returnType} "
+        line(depth, $"{model.Accessibility} static async partial {model.ReturnTypeText} "
             + $"{model.MethodName}({string.Join(", ", signatureParameters)})");
         line(depth, "{");
         line(depth + 1, $"if ({connection} is null)");
@@ -119,39 +122,186 @@ internal static class QueryMethodEmitter
             scalarIndex++;
         }
 
-        line(depth + 2, "global::System.Data.Common.DbDataReader __reader = "
-            + $"await __command.ExecuteReaderAsync({cancellationToken}).ConfigureAwait(false);");
-        line(depth + 2, "try");
-        line(depth + 2, "{");
-        for (var i = 0; i < model.Columns.Count; i++)
+        if (model.Shape is ResultShape.Execute or ResultShape.ExecuteDiscard)
         {
-            line(depth + 3, $"int __ordinal{i} = __reader.GetOrdinal(\"{model.Columns[i].Name}\");");
+            var keyword = model.Shape == ResultShape.Execute ? "return await" : "await";
+            line(depth + 2, $"{keyword} __command.ExecuteNonQueryAsync({cancellationToken}).ConfigureAwait(false);");
+        }
+        else
+        {
+            EmitReaderBlock(model, depth, line, cancellationToken);
         }
 
-        line(depth + 3, $"global::System.Collections.Generic.List<{model.RowTypeText}> __rows = new();");
-        line(depth + 3, $"while (await __reader.ReadAsync({cancellationToken}).ConfigureAwait(false))");
-        line(depth + 3, "{");
-        line(depth + 4, $"__rows.Add(new {model.RowTypeText}(");
-        for (var i = 0; i < model.Columns.Count; i++)
-        {
-            var terminator = i == model.Columns.Count - 1 ? "));" : ",";
-            line(depth + 5, ReadColumn(model.Columns[i], i) + terminator);
-        }
-
-        line(depth + 3, "}");
-        line(depth + 3, "");
-        line(depth + 3, "return __rows;");
-        line(depth + 2, "}");
-        line(depth + 2, "finally");
-        line(depth + 2, "{");
-        line(depth + 3, "await __reader.DisposeAsync().ConfigureAwait(false);");
-        line(depth + 2, "}");
         line(depth + 1, "}");
         line(depth + 1, "finally");
         line(depth + 1, "{");
         line(depth + 2, "await __command.DisposeAsync().ConfigureAwait(false);");
         line(depth + 1, "}");
         line(depth, "}");
+    }
+
+    private static void EmitReaderBlock(
+        QueryMethodModel model, int depth, Action<int, string> line, string cancellationToken)
+    {
+        line(depth + 2, "global::System.Data.Common.DbDataReader __reader = "
+            + $"await __command.ExecuteReaderAsync({cancellationToken}).ConfigureAwait(false);");
+        line(depth + 2, "try");
+        line(depth + 2, "{");
+        if (model.ElementKind == ResultElementKind.Row)
+        {
+            for (var i = 0; i < model.Columns.Count; i++)
+            {
+                line(depth + 3, $"int __ordinal{i} = __reader.GetOrdinal(\"{model.Columns[i].Name}\");");
+            }
+        }
+
+        switch (model.Shape, model.ElementKind)
+        {
+            case (ResultShape.RowList, ResultElementKind.Row):
+                EmitRowListRead(model, depth + 3, line, cancellationToken);
+                break;
+            case (ResultShape.RowList, ResultElementKind.Scalar):
+                EmitScalarListRead(model, depth + 3, line, cancellationToken);
+                break;
+            case (ResultShape.SingleRow, ResultElementKind.Row):
+                EmitSingleRead(model, depth + 3, line, cancellationToken, optional: false);
+                break;
+            case (ResultShape.OptionalRow, ResultElementKind.Row):
+                EmitSingleRead(model, depth + 3, line, cancellationToken, optional: true);
+                break;
+            case (ResultShape.SingleRow, ResultElementKind.Scalar):
+                EmitScalarSingleRead(model, depth + 3, line, cancellationToken, optional: false);
+                break;
+            case (ResultShape.OptionalRow, ResultElementKind.Scalar):
+                EmitScalarSingleRead(model, depth + 3, line, cancellationToken, optional: true);
+                break;
+            case (ResultShape.Stream, _):
+                EmitStreamRead(model, depth + 3, line, cancellationToken);
+                break;
+            default:
+                throw new InvalidOperationException(
+                    $"Unknown result shape '{model.Shape}'/'{model.ElementKind}'.");
+        }
+
+        line(depth + 2, "}");
+        line(depth + 2, "finally");
+        line(depth + 2, "{");
+        line(depth + 3, "await __reader.DisposeAsync().ConfigureAwait(false);");
+        line(depth + 2, "}");
+    }
+
+    private static void EmitRowListRead(
+        QueryMethodModel model, int depth, Action<int, string> line, string cancellationToken)
+    {
+        line(depth, $"global::System.Collections.Generic.List<{model.RowTypeText}> __rows = new();");
+        line(depth, $"while (await __reader.ReadAsync({cancellationToken}).ConfigureAwait(false))");
+        line(depth, "{");
+        EmitRowConstruction(model, depth + 1, line, "__rows.Add(", ");");
+        line(depth, "}");
+        line(depth, "");
+        line(depth, "return __rows;");
+    }
+
+    private static void EmitSingleRead(
+        QueryMethodModel model, int depth, Action<int, string> line, string cancellationToken, bool optional)
+    {
+        line(depth, $"if (!await __reader.ReadAsync({cancellationToken}).ConfigureAwait(false))");
+        line(depth, "{");
+        line(depth + 1, optional
+            ? "return null;"
+            : "throw new global::System.InvalidOperationException("
+                + "\"The query returned no rows but exactly one was expected.\");");
+        line(depth, "}");
+        line(depth, "");
+        EmitRowConstruction(model, depth, line, $"{model.RowTypeText} __row = ", ";");
+        line(depth, $"if (await __reader.ReadAsync({cancellationToken}).ConfigureAwait(false))");
+        line(depth, "{");
+        line(depth + 1, "throw new global::System.InvalidOperationException("
+            + $"\"The query returned more than one row but {(optional ? "at most" : "exactly")} one was expected.\");");
+        line(depth, "}");
+        line(depth, "");
+        line(depth, "return __row;");
+    }
+
+    private static void EmitStreamRead(
+        QueryMethodModel model, int depth, Action<int, string> line, string cancellationToken)
+    {
+        line(depth, $"while (await __reader.ReadAsync({cancellationToken}).ConfigureAwait(false))");
+        line(depth, "{");
+        if (model.ElementKind == ResultElementKind.Scalar)
+        {
+            line(depth + 1, $"yield return {ReadScalar(model.Columns[0])};");
+        }
+        else
+        {
+            EmitRowConstruction(model, depth + 1, line, "yield return ", ";");
+        }
+
+        line(depth, "}");
+    }
+
+    private static void EmitScalarListRead(
+        QueryMethodModel model, int depth, Action<int, string> line, string cancellationToken)
+    {
+        line(depth, $"global::System.Collections.Generic.List<{model.RowTypeText}> __rows = new();");
+        line(depth, $"while (await __reader.ReadAsync({cancellationToken}).ConfigureAwait(false))");
+        line(depth, "{");
+        line(depth + 1, $"__rows.Add({ReadScalar(model.Columns[0])});");
+        line(depth, "}");
+        line(depth, "");
+        line(depth, "return __rows;");
+    }
+
+    private static void EmitScalarSingleRead(
+        QueryMethodModel model, int depth, Action<int, string> line, string cancellationToken, bool optional)
+    {
+        line(depth, $"if (!await __reader.ReadAsync({cancellationToken}).ConfigureAwait(false))");
+        line(depth, "{");
+        line(depth + 1, optional
+            ? "return null;"
+            : "throw new global::System.InvalidOperationException("
+                + "\"The query returned no rows but a scalar value was expected.\");");
+        line(depth, "}");
+        line(depth, "");
+        line(depth, $"return {ReadScalar(model.Columns[0])};");
+    }
+
+    private static string ReadScalar(ColumnModel column)
+    {
+        var read = $"__reader.{column.GetterInvocation}(0)";
+        if (column.IsNullable)
+        {
+            return $"__reader.IsDBNull(0) ? default({column.TypeText}) : {read}";
+        }
+
+        return "__reader.IsDBNull(0) "
+            + "? throw new global::System.InvalidOperationException("
+            + $"\"The scalar result is NULL but maps to non-nullable '{column.TypeText}'.\") "
+            + $": {read}";
+    }
+
+    private static void EmitRowConstruction(
+        QueryMethodModel model, int depth, Action<int, string> line, string prefix, string suffix)
+    {
+        if (model.RowMapping == RowMappingKind.Properties)
+        {
+            line(depth, $"{prefix}new {model.RowTypeText}");
+            line(depth, "{");
+            for (var i = 0; i < model.Columns.Count; i++)
+            {
+                line(depth + 1, $"{model.Columns[i].Name} = {ReadColumn(model.Columns[i], i)},");
+            }
+
+            line(depth, "}" + suffix);
+            return;
+        }
+
+        line(depth, $"{prefix}new {model.RowTypeText}(");
+        for (var i = 0; i < model.Columns.Count; i++)
+        {
+            var terminator = i == model.Columns.Count - 1 ? ")" + suffix : ",";
+            line(depth + 1, ReadColumn(model.Columns[i], i) + terminator);
+        }
     }
 
     private static string ReadColumn(ColumnModel column, int index)

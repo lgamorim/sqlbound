@@ -15,24 +15,32 @@ public sealed class SqlQueryGenerator : IIncrementalGenerator
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var results = context.SyntaxProvider.ForAttributeWithMetadataName(
+        var queries = context.SyntaxProvider.ForAttributeWithMetadataName(
             "SqlBound.SqlQueryAttribute",
             static (node, _) => node is MethodDeclarationSyntax,
-            static (attributeContext, _) => QueryMethodParser.Parse(attributeContext));
+            static (attributeContext, _) => QueryMethodParser.Parse(attributeContext, isExecute: false));
 
-        context.RegisterSourceOutput(results, static (outputContext, result) =>
+        var executes = context.SyntaxProvider.ForAttributeWithMetadataName(
+            "SqlBound.SqlExecuteAttribute",
+            static (node, _) => node is MethodDeclarationSyntax,
+            static (attributeContext, _) => QueryMethodParser.Parse(attributeContext, isExecute: true));
+
+        context.RegisterSourceOutput(queries, static (outputContext, result) => Produce(outputContext, result));
+        context.RegisterSourceOutput(executes, static (outputContext, result) => Produce(outputContext, result));
+    }
+
+    private static void Produce(SourceProductionContext context, SqlQueryPipelineResult result)
+    {
+        foreach (var diagnostic in result.Diagnostics)
         {
-            foreach (var diagnostic in result.Diagnostics)
-            {
-                outputContext.ReportDiagnostic(diagnostic.CreateDiagnostic());
-            }
+            context.ReportDiagnostic(diagnostic.CreateDiagnostic());
+        }
 
-            if (result.Method is { } method)
-            {
-                outputContext.AddSource(
-                    QueryMethodEmitter.GetHintName(method),
-                    QueryMethodEmitter.EmitSource(method));
-            }
-        });
+        if (result.Method is { } method)
+        {
+            context.AddSource(
+                QueryMethodEmitter.GetHintName(method),
+                QueryMethodEmitter.EmitSource(method));
+        }
     }
 }

@@ -12,9 +12,40 @@ internal sealed record QueryMethodModel(
     string MethodName,
     bool IsExtensionMethod,
     string CommandText,
+    string ReturnTypeText,
+    ResultShape Shape,
+    ResultElementKind ElementKind,
+    RowMappingKind RowMapping,
     string RowTypeText,
     EquatableArray<ColumnModel> Columns,
     EquatableArray<MethodParameterModel> Parameters);
+
+/// <summary>The result shape a query method's return type declares, driving body emission.</summary>
+internal enum ResultShape
+{
+    RowList,
+    SingleRow,
+    OptionalRow,
+    Stream,
+    Execute,
+    ExecuteDiscard,
+}
+
+/// <summary>How row columns reach the row instance: through the single parameterized public
+/// constructor, or through settable properties on a parameterless-constructible type.</summary>
+internal enum RowMappingKind
+{
+    Constructor,
+    Properties,
+}
+
+/// <summary>Whether the result element is a constructor-mapped row or a first-column scalar.
+/// For scalars, <c>Columns</c> holds a single nameless entry describing the conversion.</summary>
+internal enum ResultElementKind
+{
+    Row,
+    Scalar,
+}
 
 /// <summary>One type in the (outermost-first) declaration chain wrapping the query method.</summary>
 internal sealed record ContainingTypeModel(string Keyword, string Name);
