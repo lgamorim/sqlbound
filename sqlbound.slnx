@@ -3,12 +3,15 @@
     <Project Path="bench/SqlBound.Benchmarks/SqlBound.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/SqlBound.Cli/SqlBound.Cli.csproj" />
     <Project Path="src/SqlBound.Generators/SqlBound.Generators.csproj" />
     <Project Path="src/SqlBound.SqlServer/SqlBound.SqlServer.csproj" />
     <Project Path="src/SqlBound/SqlBound.csproj" />
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/SqlBound.AotSmokeTest/SqlBound.AotSmokeTest.csproj" />
+    <Project Path="test/SqlBound.Cli.IntegrationTests/SqlBound.Cli.IntegrationTests.csproj" />
+    <Project Path="test/SqlBound.Cli.UnitTests/SqlBound.Cli.UnitTests.csproj" />
     <Project Path="test/SqlBound.Generators.UnitTests/SqlBound.Generators.UnitTests.csproj" />
     <Project Path="test/SqlBound.IntegrationTests/SqlBound.IntegrationTests.csproj" />
     <Project Path="test/SqlBound.SqlServer.IntegrationTests/SqlBound.SqlServer.IntegrationTests.csproj" />
