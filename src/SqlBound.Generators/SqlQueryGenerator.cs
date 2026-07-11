@@ -27,7 +27,12 @@ public sealed class SqlQueryGenerator : IIncrementalGenerator
                 outputContext.ReportDiagnostic(diagnostic.CreateDiagnostic());
             }
 
-            // result.Method emission arrives in the next M4 commit.
+            if (result.Method is { } method)
+            {
+                outputContext.AddSource(
+                    QueryMethodEmitter.GetHintName(method),
+                    QueryMethodEmitter.EmitSource(method));
+            }
         });
     }
 }

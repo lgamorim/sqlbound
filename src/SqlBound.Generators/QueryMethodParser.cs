@@ -86,7 +86,8 @@ internal static class QueryMethodParser
             }
             else if (TryGetGetter(parameter.Type, guidType, out _))
             {
-                parameters.Add(new MethodParameterModel(parameter.Name, typeText, ParameterKind.Scalar));
+                var canBeNull = parameter.Type.IsReferenceType || IsNullable(parameter.Type);
+                parameters.Add(new MethodParameterModel(parameter.Name, typeText, ParameterKind.Scalar, canBeNull));
             }
             else
             {

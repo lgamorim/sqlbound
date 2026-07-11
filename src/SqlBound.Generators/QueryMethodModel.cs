@@ -22,8 +22,10 @@ internal sealed record ContainingTypeModel(string Keyword, string Name);
 /// <summary>One row-type constructor parameter, read from the result set column of the same name.</summary>
 internal sealed record ColumnModel(string Name, string TypeText, string GetterInvocation, bool IsNullable);
 
-/// <summary>One parameter of the query method, classified by the role it plays in the generated body.</summary>
-internal sealed record MethodParameterModel(string Name, string TypeText, ParameterKind Kind);
+/// <summary>One parameter of the query method, classified by the role it plays in the generated body.
+/// <paramref name="CanBeNull"/> is meaningful for scalars only: it decides whether binding
+/// coalesces the argument to <c>DBNull.Value</c>.</summary>
+internal sealed record MethodParameterModel(string Name, string TypeText, ParameterKind Kind, bool CanBeNull = false);
 
 /// <summary>The role a method parameter plays in the generated implementation.</summary>
 internal enum ParameterKind
