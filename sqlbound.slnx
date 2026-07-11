@@ -3,6 +3,7 @@
     <Project Path="src/SqlBound/SqlBound.csproj" />
   </Folder>
   <Folder Name="/test/">
+    <Project Path="test/SqlBound.IntegrationTests/SqlBound.IntegrationTests.csproj" />
     <Project Path="test/SqlBound.UnitTests/SqlBound.UnitTests.csproj" />
   </Folder>
 </Solution>

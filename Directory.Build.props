@@ -12,7 +12,7 @@
 
   <PropertyGroup Label="Package metadata">
     <Authors>Luís Amorim</Authors>
-    <PackageVersion>0.1.0-preview.1</PackageVersion>
+    <PackageVersion>0.1.0</PackageVersion>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/lgamorim/sqlbound</PackageProjectUrl>
     <RepositoryUrl>https://github.com/lgamorim/sqlbound</RepositoryUrl>
@@ -29,7 +29,7 @@
     as a build-time diagnostic (https://github.com/dotnet/roslyn/issues/41640); only the missing-doc-
     comment warning (CS1591) itself is suppressed.
   -->
-  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.UnitTests'))">
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
