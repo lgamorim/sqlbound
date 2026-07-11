@@ -74,8 +74,6 @@ internal static class QueryMethodEmitter
         var transaction = ParameterNameOrNull(model, ParameterKind.Transaction);
         var cancellationToken = ParameterNameOrNull(model, ParameterKind.CancellationToken)
             ?? "global::System.Threading.CancellationToken.None";
-        var returnType = "global::System.Threading.Tasks.Task<"
-            + $"global::System.Collections.Generic.IReadOnlyList<{model.RowTypeText}>>";
 
         var signatureParameters = new List<string>();
         foreach (var parameter in model.Parameters)
@@ -84,7 +82,7 @@ internal static class QueryMethodEmitter
             signatureParameters.Add($"{prefix}{parameter.TypeText} {parameter.Name}");
         }
 
-        line(depth, $"{model.Accessibility} static async partial {returnType} "
+        line(depth, $"{model.Accessibility} static async partial {model.ReturnTypeText} "
             + $"{model.MethodName}({string.Join(", ", signatureParameters)})");
         line(depth, "{");
         line(depth + 1, $"if ({connection} is null)");
@@ -128,19 +126,21 @@ internal static class QueryMethodEmitter
             line(depth + 3, $"int __ordinal{i} = __reader.GetOrdinal(\"{model.Columns[i].Name}\");");
         }
 
-        line(depth + 3, $"global::System.Collections.Generic.List<{model.RowTypeText}> __rows = new();");
-        line(depth + 3, $"while (await __reader.ReadAsync({cancellationToken}).ConfigureAwait(false))");
-        line(depth + 3, "{");
-        line(depth + 4, $"__rows.Add(new {model.RowTypeText}(");
-        for (var i = 0; i < model.Columns.Count; i++)
+        switch (model.Shape)
         {
-            var terminator = i == model.Columns.Count - 1 ? "));" : ",";
-            line(depth + 5, ReadColumn(model.Columns[i], i) + terminator);
+            case ResultShape.RowList:
+                EmitRowListRead(model, depth + 3, line, cancellationToken);
+                break;
+            case ResultShape.SingleRow:
+                EmitSingleRead(model, depth + 3, line, cancellationToken, optional: false);
+                break;
+            case ResultShape.OptionalRow:
+                EmitSingleRead(model, depth + 3, line, cancellationToken, optional: true);
+                break;
+            default:
+                throw new InvalidOperationException($"Unknown result shape '{model.Shape}'.");
         }
 
-        line(depth + 3, "}");
-        line(depth + 3, "");
-        line(depth + 3, "return __rows;");
         line(depth + 2, "}");
         line(depth + 2, "finally");
         line(depth + 2, "{");
@@ -152,6 +152,50 @@ internal static class QueryMethodEmitter
         line(depth + 2, "await __command.DisposeAsync().ConfigureAwait(false);");
         line(depth + 1, "}");
         line(depth, "}");
+    }
+
+    private static void EmitRowListRead(
+        QueryMethodModel model, int depth, Action<int, string> line, string cancellationToken)
+    {
+        line(depth, $"global::System.Collections.Generic.List<{model.RowTypeText}> __rows = new();");
+        line(depth, $"while (await __reader.ReadAsync({cancellationToken}).ConfigureAwait(false))");
+        line(depth, "{");
+        EmitRowConstruction(model, depth + 1, line, "__rows.Add(", ");");
+        line(depth, "}");
+        line(depth, "");
+        line(depth, "return __rows;");
+    }
+
+    private static void EmitSingleRead(
+        QueryMethodModel model, int depth, Action<int, string> line, string cancellationToken, bool optional)
+    {
+        line(depth, $"if (!await __reader.ReadAsync({cancellationToken}).ConfigureAwait(false))");
+        line(depth, "{");
+        line(depth + 1, optional
+            ? "return null;"
+            : "throw new global::System.InvalidOperationException("
+                + "\"The query returned no rows but exactly one was expected.\");");
+        line(depth, "}");
+        line(depth, "");
+        EmitRowConstruction(model, depth, line, $"{model.RowTypeText} __row = ", ";");
+        line(depth, $"if (await __reader.ReadAsync({cancellationToken}).ConfigureAwait(false))");
+        line(depth, "{");
+        line(depth + 1, "throw new global::System.InvalidOperationException("
+            + $"\"The query returned more than one row but {(optional ? "at most" : "exactly")} one was expected.\");");
+        line(depth, "}");
+        line(depth, "");
+        line(depth, "return __row;");
+    }
+
+    private static void EmitRowConstruction(
+        QueryMethodModel model, int depth, Action<int, string> line, string prefix, string suffix)
+    {
+        line(depth, $"{prefix}new {model.RowTypeText}(");
+        for (var i = 0; i < model.Columns.Count; i++)
+        {
+            var terminator = i == model.Columns.Count - 1 ? ")" + suffix : ",";
+            line(depth + 1, ReadColumn(model.Columns[i], i) + terminator);
+        }
     }
 
     private static string ReadColumn(ColumnModel column, int index)

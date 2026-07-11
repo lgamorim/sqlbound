@@ -98,12 +98,43 @@ internal static class QueryMethodParser
         var taskType = compilation.GetTypeByMetadataName("System.Threading.Tasks.Task`1");
         var readOnlyListType = compilation.GetTypeByMetadataName("System.Collections.Generic.IReadOnlyList`1");
         ITypeSymbol? rowType = null;
+        var shape = ResultShape.RowList;
         if (symbol.ReturnType is INamedTypeSymbol task
-            && SymbolEqualityComparer.Default.Equals(task.OriginalDefinition, taskType)
-            && task.TypeArguments[0] is INamedTypeSymbol list
-            && SymbolEqualityComparer.Default.Equals(list.OriginalDefinition, readOnlyListType))
+            && SymbolEqualityComparer.Default.Equals(task.OriginalDefinition, taskType))
         {
-            rowType = list.TypeArguments[0];
+            var payload = task.TypeArguments[0];
+            if (payload is INamedTypeSymbol list
+                && SymbolEqualityComparer.Default.Equals(list.OriginalDefinition, readOnlyListType))
+            {
+                shape = ResultShape.RowList;
+                rowType = StripAnnotation(list.TypeArguments[0]);
+            }
+            else
+            {
+                var isOptional = false;
+                var element = payload;
+                if (payload is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullablePayload)
+                {
+                    isOptional = true;
+                    element = nullablePayload.TypeArguments[0];
+                }
+                else if (payload.IsReferenceType && payload.NullableAnnotation == NullableAnnotation.Annotated)
+                {
+                    isOptional = true;
+                    element = StripAnnotation(payload);
+                }
+
+                if (TryGetGetter(element, guidType, out _))
+                {
+                    // Scalar shapes arrive in a later M5 commit; until then a scalar payload is unsupported.
+                    Report(SqlQueryDiagnostics.UnsupportedReturnType, symbol.Name, symbol.ReturnType.ToDisplayString());
+                }
+                else
+                {
+                    shape = isOptional ? ResultShape.OptionalRow : ResultShape.SingleRow;
+                    rowType = element;
+                }
+            }
         }
         else
         {
@@ -131,6 +162,8 @@ internal static class QueryMethodParser
             symbol.Name,
             symbol.IsExtensionMethod,
             commandText!,
+            symbol.ReturnType.ToDisplayString(TypeTextFormat),
+            shape,
             rowType!.ToDisplayString(TypeTextFormat),
             new EquatableArray<ColumnModel>(columns),
             new EquatableArray<MethodParameterModel>([.. parameters]));
@@ -206,6 +239,11 @@ internal static class QueryMethodParser
     private static bool IsNullable(ITypeSymbol type) =>
         type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
         || (type.IsReferenceType && type.NullableAnnotation == NullableAnnotation.Annotated);
+
+    private static ITypeSymbol StripAnnotation(ITypeSymbol type) =>
+        type.IsReferenceType && type.NullableAnnotation == NullableAnnotation.Annotated
+            ? type.WithNullableAnnotation(NullableAnnotation.NotAnnotated)
+            : type;
 
     private static ITypeSymbol StripNullable(ITypeSymbol type) =>
         type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable

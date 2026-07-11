@@ -12,9 +12,19 @@ internal sealed record QueryMethodModel(
     string MethodName,
     bool IsExtensionMethod,
     string CommandText,
+    string ReturnTypeText,
+    ResultShape Shape,
     string RowTypeText,
     EquatableArray<ColumnModel> Columns,
     EquatableArray<MethodParameterModel> Parameters);
+
+/// <summary>The result shape a query method's return type declares, driving body emission.</summary>
+internal enum ResultShape
+{
+    RowList,
+    SingleRow,
+    OptionalRow,
+}
 
 /// <summary>One type in the (outermost-first) declaration chain wrapping the query method.</summary>
 internal sealed record ContainingTypeModel(string Keyword, string Name);
