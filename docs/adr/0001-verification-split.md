@@ -15,14 +15,15 @@ That verification requires a live round-trip to a database. Roslyn analyzers, ho
 expected to be fast, deterministic, and side-effect-free: they run repeatedly as the developer
 types, inside the IDE's live analysis loop, and are not guaranteed to execute in an environment
 with network or database access. An analyzer that opens a database connection on every keystroke
-would make the IDE unusably slow at best, and simply fail to load in environments without DB
-connectivity (a fresh CI checkout, a teammate without local credentials) at worst.
+would make the IDE unusably slow at best, and leave analysis failing or hanging in environments
+without DB connectivity (a fresh CI checkout, a teammate without local credentials) at worst.
 
 We need database-backed verification without coupling it to the fast, always-on analyzer loop.
 
 ## Decision
 
-Split the verification pipeline into two stages that never share a process boundary:
+Split the verification pipeline into two stages that run in separate processes and communicate
+only through committed snapshot files:
 
 1. **Preparation (I/O-bound, explicit, opt-in).** A CLI command (`dotnet sqlbound prepare`) and an
    optional opt-in MSBuild task connect to a real database — via `SQLBOUND_DATABASE_URL` — prepare
@@ -31,8 +32,8 @@ Split the verification pipeline into two stages that never share a process bound
    is committed to source control. This is the only place a live database connection is opened.
 2. **Verification (fast, deterministic, offline).** The Roslyn analyzer that runs inside the IDE
    and on every build reads only the committed `.sqlbound/` snapshots — it never opens a network
-   or database connection itself. It compares each snapshot against the generated method's
-   declared shape and reports mismatches as `SQLB###` diagnostics.
+   or database connection itself. It compares each snapshot against the partial method's declared
+   signature and reports mismatches as `SQLB###` diagnostics.
 
    The analyzer consumes the snapshots through Roslyn's `AdditionalFiles`/`AdditionalTexts`
    mechanism, wired up automatically for consumers via a `buildTransitive` `.props` file in the
@@ -64,9 +65,21 @@ live database).
 - Introduces a two-step workflow: a developer who changes a query or the underlying schema must
   remember to re-run `prepare` before the analyzer will reflect it.
 - Snapshots can go stale silently if `prepare` isn't re-run and nothing checks for drift.
+- The opt-in MSBuild `prepare` task raises a build-ordering question the CLI path does not have:
+  it would regenerate snapshots mid-build, after the analyzer has already read the old ones. This
+  must be resolved when the task is designed (e.g., by requiring a second build, or by scoping the
+  task to run before compilation).
 
 **Follow-up**
 
 - A `prepare --check` (or equivalent) mode that fails if regenerating snapshots would produce a
   diff is required to catch staleness in CI. This is scoped to M9 (offline mode), not this
   milestone.
+- Snapshot file granularity is one file per query (keyed by a content hash), not a single
+  aggregate file. SQLx abandoned its original single `sqlx-data.json` for a per-query `.sqlx/`
+  directory precisely because the aggregate file caused constant merge conflicts between parallel
+  branches. The exact file layout and naming are finalized in M9.
+- The analyzer's behavior when a query has *no* snapshot at all (as opposed to a mismatched one)
+  is deliberately left open here and must be defined in M8's diagnostic design. It interacts with
+  ADR 0002: under snapshot-driven codegen a missing snapshot is necessarily a build error, while
+  under signature-driven codegen it could be anything from silence to a warning.
