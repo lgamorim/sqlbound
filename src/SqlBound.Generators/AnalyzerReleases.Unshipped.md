@@ -20,3 +20,7 @@ SQLB104 | SqlBound.Verification | Error | Result set has no column with the decl
 SQLB105 | SqlBound.Verification | Error | Column CLR type differs from the declaration
 SQLB106 | SqlBound.Verification | Error | Database column is nullable but declared non-nullable
 SQLB107 | SqlBound.Verification | Info | Result set returns columns the method never reads
+SQLB108 | SqlBound.Verification | Error | Statement uses a parameter the method does not declare
+SQLB109 | SqlBound.Verification | Warning | Method declares a scalar parameter the statement never uses
+SQLB110 | SqlBound.Verification | Error | Parameter CLR type differs from the declaration
+SQLB111 | SqlBound.Verification | Warning | [SqlExecute] statement returns a result set it discards

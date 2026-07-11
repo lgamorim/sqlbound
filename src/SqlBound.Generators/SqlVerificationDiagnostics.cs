@@ -51,4 +51,36 @@ internal static class SqlVerificationDiagnostics
         Category,
         DiagnosticSeverity.Info,
         isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor SqlParameterMissingFromMethod = new(
+        "SQLB108",
+        "SQL parameter missing from the method",
+        "The statement uses parameter '@{0}', but '{1}' declares no matching parameter",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor MethodParameterUnusedBySql = new(
+        "SQLB109",
+        "Method parameter unused by the SQL",
+        "Parameter '{0}' of '{1}' is never used by the statement",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor ParameterTypeMismatch = new(
+        "SQLB110",
+        "Parameter type mismatch",
+        "Parameter '{0}' is '{1}' ({2}) in the database, but '{3}' declares '{4}'",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor ExecuteStatementReturnsResultSet = new(
+        "SQLB111",
+        "Execute statement returns a result set",
+        "The statement returns a result set that '{0}' discards; use [SqlQuery] to read it",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
 }

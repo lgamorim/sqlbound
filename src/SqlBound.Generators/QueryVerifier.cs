@@ -15,6 +15,7 @@ internal static class QueryVerifier
     {
         var findings = new List<VerificationFinding>();
         VerifyColumns(model, snapshot, findings);
+        VerifyParameters(model, snapshot, findings);
         return findings;
     }
 
@@ -22,6 +23,12 @@ internal static class QueryVerifier
     {
         if (model.Shape is ResultShape.Execute or ResultShape.ExecuteDiscard)
         {
+            if (snapshot.Columns.Count > 0)
+            {
+                findings.Add(new VerificationFinding(
+                    SqlVerificationDiagnostics.ExecuteStatementReturnsResultSet, model.MethodName));
+            }
+
             return;
         }
 
@@ -73,6 +80,50 @@ internal static class QueryVerifier
         if (unread.Length > 0)
         {
             ReportUnreadColumns(model, unread, findings);
+        }
+    }
+
+    private static void VerifyParameters(QueryMethodModel model, QuerySnapshot snapshot, List<VerificationFinding> findings)
+    {
+        var declaredByName = new Dictionary<string, MethodParameterModel>(StringComparer.OrdinalIgnoreCase);
+        foreach (var parameter in model.Parameters)
+        {
+            if (parameter.Kind == ParameterKind.Scalar)
+            {
+                declaredByName[parameter.Name] = parameter;
+            }
+        }
+
+        var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var described in snapshot.Parameters)
+        {
+            if (!declaredByName.TryGetValue(described.Name, out var declared))
+            {
+                findings.Add(new VerificationFinding(
+                    SqlVerificationDiagnostics.SqlParameterMissingFromMethod, described.Name, model.MethodName));
+                continue;
+            }
+
+            usedNames.Add(declared.Name);
+            if (StripNullableSuffix(declared.TypeText) != described.ClrTypeText)
+            {
+                findings.Add(new VerificationFinding(
+                    SqlVerificationDiagnostics.ParameterTypeMismatch,
+                    declared.Name,
+                    described.ClrTypeText,
+                    described.SqlTypeName,
+                    model.MethodName,
+                    declared.TypeText));
+            }
+        }
+
+        foreach (var parameter in model.Parameters)
+        {
+            if (parameter.Kind == ParameterKind.Scalar && !usedNames.Contains(parameter.Name))
+            {
+                findings.Add(new VerificationFinding(
+                    SqlVerificationDiagnostics.MethodParameterUnusedBySql, parameter.Name, model.MethodName));
+            }
         }
     }
 
