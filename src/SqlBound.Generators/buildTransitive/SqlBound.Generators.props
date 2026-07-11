@@ -1,0 +1,14 @@
+<Project>
+
+  <!--
+    Wires the consumer's committed .sqlbound/ snapshots into the compilation as AdditionalFiles —
+    the enabling mechanism of ADR 0001's verification split: analyzers may not do arbitrary file
+    I/O (RS1035), and AdditionalTexts participate in Roslyn's change tracking, so editing or
+    re-preparing a snapshot correctly re-triggers analysis. No .sqlbound/ directory means nothing
+    is wired and the verification analyzer stays silent (ADR 0003's opt-in default).
+  -->
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildProjectDirectory)/.sqlbound/*.json" />
+  </ItemGroup>
+
+</Project>

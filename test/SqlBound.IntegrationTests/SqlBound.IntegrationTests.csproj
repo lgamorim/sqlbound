@@ -13,6 +13,12 @@
     <ProjectReference Include="..\..\src\SqlBound\SqlBound.csproj" />
     <!-- Analyzer-only reference: the same shape consumers get from the package's analyzers/dotnet/cs. -->
     <ProjectReference Include="..\..\src\SqlBound.Generators\SqlBound.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <!--
+      The same wiring the package's buildTransitive props gives PackageReference consumers.
+      No .sqlbound/ directory exists here yet (this sample runs on SQLite; snapshots arrive with
+      the Phase 4 provider), so the glob matches nothing and verification stays opted out.
+    -->
+    <AdditionalFiles Include="$(MSBuildProjectDirectory)/.sqlbound/*.json" />
   </ItemGroup>
 
   <ItemGroup>
