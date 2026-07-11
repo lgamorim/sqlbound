@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SqlBound\SqlBound.csproj" />
+    <!-- Analyzer-only reference: the same shape consumers get from the package's analyzers/dotnet/cs. -->
+    <ProjectReference Include="..\..\src\SqlBound.Generators\SqlBound.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
