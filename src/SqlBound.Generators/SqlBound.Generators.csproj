@@ -25,6 +25,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="SqlBound.Generators.UnitTests" />
+    <!-- The CLI tests assert writer/reader round-trips and key parity against the analyzer. -->
+    <InternalsVisibleTo Include="SqlBound.Cli.UnitTests" />
   </ItemGroup>
 
   <ItemGroup>
