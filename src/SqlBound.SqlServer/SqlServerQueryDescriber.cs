@@ -22,9 +22,17 @@ public static class SqlServerQueryDescriber
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentException.ThrowIfNullOrWhiteSpace(commandText);
 
-        var columns = await DescribeColumnsAsync(connection, commandText, cancellationToken).ConfigureAwait(false);
-        var parameters = await DescribeParametersAsync(connection, commandText, cancellationToken).ConfigureAwait(false);
-        return new QueryDescription(columns, parameters);
+        try
+        {
+            var columns = await DescribeColumnsAsync(connection, commandText, cancellationToken).ConfigureAwait(false);
+            var parameters = await DescribeParametersAsync(connection, commandText, cancellationToken).ConfigureAwait(false);
+            return new QueryDescription(columns, parameters);
+        }
+        catch (SqlException exception)
+        {
+            throw new SqlBoundDescribeException(
+                $"SQL Server could not describe the command: {exception.Message}", commandText, exception);
+        }
     }
 
     private static async Task<IReadOnlyList<DescribedColumn>> DescribeColumnsAsync(
