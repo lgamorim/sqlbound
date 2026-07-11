@@ -10,15 +10,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\SqlBound.Cli\SqlBound.Cli.csproj" />
+    <ProjectReference Include="..\..\src\SqlBound.Generators\SqlBound.Generators.csproj" />
     <ProjectReference Include="..\..\src\SqlBound\SqlBound.csproj" />
-    <!-- Analyzer-only reference: the same shape consumers get from the package's analyzers/dotnet/cs. -->
-    <ProjectReference Include="..\..\src\SqlBound.Generators\SqlBound.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <!--
-      The same wiring the package's buildTransitive props gives PackageReference consumers.
-      No .sqlbound/ directory exists here yet (this sample runs on SQLite; snapshots arrive with
-      the Phase 4 provider), so the glob matches nothing and verification stays opted out.
-    -->
-    <AdditionalFiles Include="$(MSBuildProjectDirectory)/.sqlbound/*.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,10 +20,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Dapper" Version="2.1.79" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.9" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
-    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
+    <PackageReference Include="Testcontainers.MsSql" Version="4.13.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
