@@ -106,13 +106,13 @@ public class SqlQueryGeneratorTests
     }
 
     [Fact]
-    public void Should_ReportSqlb004_When_ReturnTypeIsNotTaskOfReadOnlyList()
+    public void Should_ReportSqlb004_When_ReturnTypeIsNotASupportedShape()
     {
         const string source = Prelude + """
             public static partial class ItemQueries
             {
-                [SqlQuery("SELECT COUNT(*) FROM items")]
-                public static partial Task<int> CountItemsAsync(DbConnection connection);
+                [SqlQuery("DELETE FROM items")]
+                public static partial Task DeleteAllAsync(DbConnection connection);
             }
             """;
 

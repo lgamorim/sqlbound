@@ -34,7 +34,7 @@ internal static class SqlQueryDiagnostics
     public static readonly DiagnosticDescriptor UnsupportedReturnType = new(
         "SQLB004",
         "Unsupported return type",
-        "Method '{0}' returns '{1}' but [SqlQuery] methods must return Task<T>, Task<T?>, or Task<IReadOnlyList<T>> where T is a supported row type",
+        "Method '{0}' returns '{1}' but [SqlQuery] methods must return Task<T>, Task<T?>, or Task<IReadOnlyList<T>> where T is a supported row or scalar type",
         Category,
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);

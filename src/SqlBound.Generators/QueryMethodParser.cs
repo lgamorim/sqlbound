@@ -98,7 +98,9 @@ internal static class QueryMethodParser
         var taskType = compilation.GetTypeByMetadataName("System.Threading.Tasks.Task`1");
         var readOnlyListType = compilation.GetTypeByMetadataName("System.Collections.Generic.IReadOnlyList`1");
         ITypeSymbol? rowType = null;
+        ColumnModel? scalarColumn = null;
         var shape = ResultShape.RowList;
+        var elementKind = ResultElementKind.Row;
         if (symbol.ReturnType is INamedTypeSymbol task
             && SymbolEqualityComparer.Default.Equals(task.OriginalDefinition, taskType))
         {
@@ -107,7 +109,20 @@ internal static class QueryMethodParser
                 && SymbolEqualityComparer.Default.Equals(list.OriginalDefinition, readOnlyListType))
             {
                 shape = ResultShape.RowList;
-                rowType = StripAnnotation(list.TypeArguments[0]);
+                var listElement = list.TypeArguments[0];
+                if (TryGetGetter(listElement, guidType, out var listGetter))
+                {
+                    elementKind = ResultElementKind.Scalar;
+                    scalarColumn = new ColumnModel(
+                        string.Empty,
+                        listElement.ToDisplayString(TypeTextFormat),
+                        listGetter!,
+                        IsNullable(listElement));
+                }
+                else
+                {
+                    rowType = StripAnnotation(listElement);
+                }
             }
             else
             {
@@ -124,14 +139,18 @@ internal static class QueryMethodParser
                     element = StripAnnotation(payload);
                 }
 
-                if (TryGetGetter(element, guidType, out _))
+                shape = isOptional ? ResultShape.OptionalRow : ResultShape.SingleRow;
+                if (TryGetGetter(element, guidType, out var scalarGetter))
                 {
-                    // Scalar shapes arrive in a later M5 commit; until then a scalar payload is unsupported.
-                    Report(SqlQueryDiagnostics.UnsupportedReturnType, symbol.Name, symbol.ReturnType.ToDisplayString());
+                    elementKind = ResultElementKind.Scalar;
+                    scalarColumn = new ColumnModel(
+                        string.Empty,
+                        payload.ToDisplayString(TypeTextFormat),
+                        scalarGetter!,
+                        isOptional);
                 }
                 else
                 {
-                    shape = isOptional ? ResultShape.OptionalRow : ResultShape.SingleRow;
                     rowType = element;
                 }
             }
@@ -141,7 +160,9 @@ internal static class QueryMethodParser
             Report(SqlQueryDiagnostics.UnsupportedReturnType, symbol.Name, symbol.ReturnType.ToDisplayString());
         }
 
-        ColumnModel[] columns = rowType is null ? [] : ParseColumns(rowType, guidType, Report);
+        ColumnModel[] columns = scalarColumn is not null
+            ? [scalarColumn]
+            : rowType is null ? [] : ParseColumns(rowType, guidType, Report);
 
         if (diagnostics.Count > 0)
         {
@@ -164,7 +185,8 @@ internal static class QueryMethodParser
             commandText!,
             symbol.ReturnType.ToDisplayString(TypeTextFormat),
             shape,
-            rowType!.ToDisplayString(TypeTextFormat),
+            elementKind,
+            scalarColumn?.TypeText ?? rowType!.ToDisplayString(TypeTextFormat),
             new EquatableArray<ColumnModel>(columns),
             new EquatableArray<MethodParameterModel>([.. parameters]));
         return new SqlQueryPipelineResult(model, EquatableArray<DiagnosticInfo>.Empty);

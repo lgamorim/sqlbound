@@ -160,6 +160,87 @@ public class QueryMethodEmissionTests
     }
 
     [Fact]
+    public void Should_EmitFirstColumnScalarRead_When_ReturnTypeIsTaskOfScalar()
+    {
+        const string source = Prelude + """
+            public static partial class ItemQueries
+            {
+                [SqlQuery("SELECT COUNT(*) FROM items")]
+                public static partial Task<int> CountAsync(
+                    DbConnection connection, CancellationToken cancellationToken = default);
+            }
+            """;
+
+        var outcome = GeneratorHarness.Run(source);
+
+        AssertCompilesClean(outcome);
+        var generated = Assert.Single(outcome.GeneratedSources).SourceText.ToString();
+        Assert.Contains("GetInt32(0)", generated);
+        Assert.Contains("no rows but a scalar value was expected", generated);
+    }
+
+    [Fact]
+    public void Should_ReturnNullOnNoRowsOrDbNull_When_ReturnTypeIsTaskOfNullableScalar()
+    {
+        const string source = Prelude + """
+            public static partial class ItemQueries
+            {
+                [SqlQuery("SELECT MAX(price) FROM items")]
+                public static partial Task<decimal?> MaxPriceAsync(
+                    DbConnection connection, CancellationToken cancellationToken = default);
+            }
+            """;
+
+        var outcome = GeneratorHarness.Run(source);
+
+        AssertCompilesClean(outcome);
+        var generated = Assert.Single(outcome.GeneratedSources).SourceText.ToString();
+        Assert.Contains("return null;", generated);
+        Assert.Contains("default(decimal?)", generated);
+        Assert.Contains("GetDecimal(0)", generated);
+    }
+
+    [Fact]
+    public void Should_EmitScalarList_When_ReturnTypeIsTaskOfReadOnlyListOfScalar()
+    {
+        const string source = Prelude + """
+            public static partial class ItemQueries
+            {
+                [SqlQuery("SELECT name FROM items")]
+                public static partial Task<IReadOnlyList<string>> GetNamesAsync(
+                    DbConnection connection, CancellationToken cancellationToken = default);
+            }
+            """;
+
+        var outcome = GeneratorHarness.Run(source);
+
+        AssertCompilesClean(outcome);
+        var generated = Assert.Single(outcome.GeneratedSources).SourceText.ToString();
+        Assert.Contains("List<string> __rows", generated);
+        Assert.Contains("GetString(0)", generated);
+    }
+
+    [Fact]
+    public void Should_EmitCompilableImplementation_When_ScalarListElementIsNullable()
+    {
+        const string source = Prelude + """
+            public static partial class ItemQueries
+            {
+                [SqlQuery("SELECT price FROM items")]
+                public static partial Task<IReadOnlyList<decimal?>> GetPricesAsync(
+                    DbConnection connection, CancellationToken cancellationToken = default);
+            }
+            """;
+
+        var outcome = GeneratorHarness.Run(source);
+
+        AssertCompilesClean(outcome);
+        var generated = Assert.Single(outcome.GeneratedSources).SourceText.ToString();
+        Assert.Contains("List<decimal?> __rows", generated);
+        Assert.Contains("default(decimal?)", generated);
+    }
+
+    [Fact]
     public void Should_EmitSingleImplementationFile_When_MethodIsWellFormed()
     {
         var outcome = GeneratorHarness.Run(CanonicalSource);

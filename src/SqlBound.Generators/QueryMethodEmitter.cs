@@ -121,24 +121,37 @@ internal static class QueryMethodEmitter
             + $"await __command.ExecuteReaderAsync({cancellationToken}).ConfigureAwait(false);");
         line(depth + 2, "try");
         line(depth + 2, "{");
-        for (var i = 0; i < model.Columns.Count; i++)
+        if (model.ElementKind == ResultElementKind.Row)
         {
-            line(depth + 3, $"int __ordinal{i} = __reader.GetOrdinal(\"{model.Columns[i].Name}\");");
+            for (var i = 0; i < model.Columns.Count; i++)
+            {
+                line(depth + 3, $"int __ordinal{i} = __reader.GetOrdinal(\"{model.Columns[i].Name}\");");
+            }
         }
 
-        switch (model.Shape)
+        switch (model.Shape, model.ElementKind)
         {
-            case ResultShape.RowList:
+            case (ResultShape.RowList, ResultElementKind.Row):
                 EmitRowListRead(model, depth + 3, line, cancellationToken);
                 break;
-            case ResultShape.SingleRow:
+            case (ResultShape.RowList, ResultElementKind.Scalar):
+                EmitScalarListRead(model, depth + 3, line, cancellationToken);
+                break;
+            case (ResultShape.SingleRow, ResultElementKind.Row):
                 EmitSingleRead(model, depth + 3, line, cancellationToken, optional: false);
                 break;
-            case ResultShape.OptionalRow:
+            case (ResultShape.OptionalRow, ResultElementKind.Row):
                 EmitSingleRead(model, depth + 3, line, cancellationToken, optional: true);
                 break;
+            case (ResultShape.SingleRow, ResultElementKind.Scalar):
+                EmitScalarSingleRead(model, depth + 3, line, cancellationToken, optional: false);
+                break;
+            case (ResultShape.OptionalRow, ResultElementKind.Scalar):
+                EmitScalarSingleRead(model, depth + 3, line, cancellationToken, optional: true);
+                break;
             default:
-                throw new InvalidOperationException($"Unknown result shape '{model.Shape}'.");
+                throw new InvalidOperationException(
+                    $"Unknown result shape '{model.Shape}'/'{model.ElementKind}'.");
         }
 
         line(depth + 2, "}");
@@ -185,6 +198,46 @@ internal static class QueryMethodEmitter
         line(depth, "}");
         line(depth, "");
         line(depth, "return __row;");
+    }
+
+    private static void EmitScalarListRead(
+        QueryMethodModel model, int depth, Action<int, string> line, string cancellationToken)
+    {
+        line(depth, $"global::System.Collections.Generic.List<{model.RowTypeText}> __rows = new();");
+        line(depth, $"while (await __reader.ReadAsync({cancellationToken}).ConfigureAwait(false))");
+        line(depth, "{");
+        line(depth + 1, $"__rows.Add({ReadScalar(model.Columns[0])});");
+        line(depth, "}");
+        line(depth, "");
+        line(depth, "return __rows;");
+    }
+
+    private static void EmitScalarSingleRead(
+        QueryMethodModel model, int depth, Action<int, string> line, string cancellationToken, bool optional)
+    {
+        line(depth, $"if (!await __reader.ReadAsync({cancellationToken}).ConfigureAwait(false))");
+        line(depth, "{");
+        line(depth + 1, optional
+            ? "return null;"
+            : "throw new global::System.InvalidOperationException("
+                + "\"The query returned no rows but a scalar value was expected.\");");
+        line(depth, "}");
+        line(depth, "");
+        line(depth, $"return {ReadScalar(model.Columns[0])};");
+    }
+
+    private static string ReadScalar(ColumnModel column)
+    {
+        var read = $"__reader.{column.GetterInvocation}(0)";
+        if (column.IsNullable)
+        {
+            return $"__reader.IsDBNull(0) ? default({column.TypeText}) : {read}";
+        }
+
+        return "__reader.IsDBNull(0) "
+            + "? throw new global::System.InvalidOperationException("
+            + $"\"The scalar result is NULL but maps to non-nullable '{column.TypeText}'.\") "
+            + $": {read}";
     }
 
     private static void EmitRowConstruction(

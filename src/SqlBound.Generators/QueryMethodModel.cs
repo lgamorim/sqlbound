@@ -14,6 +14,7 @@ internal sealed record QueryMethodModel(
     string CommandText,
     string ReturnTypeText,
     ResultShape Shape,
+    ResultElementKind ElementKind,
     string RowTypeText,
     EquatableArray<ColumnModel> Columns,
     EquatableArray<MethodParameterModel> Parameters);
@@ -24,6 +25,14 @@ internal enum ResultShape
     RowList,
     SingleRow,
     OptionalRow,
+}
+
+/// <summary>Whether the result element is a constructor-mapped row or a first-column scalar.
+/// For scalars, <c>Columns</c> holds a single nameless entry describing the conversion.</summary>
+internal enum ResultElementKind
+{
+    Row,
+    Scalar,
 }
 
 /// <summary>One type in the (outermost-first) declaration chain wrapping the query method.</summary>
