@@ -37,7 +37,7 @@
 
   <PropertyGroup Label="Package metadata">
     <Authors>Luís Amorim</Authors>
-    <PackageVersion>1.0.0-preview.1</PackageVersion>
+    <PackageVersion>1.0.0-rc.1</PackageVersion>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>sql;ado.net;dapper;source-generator;native-aot;sqlx;query;database;migrations</PackageTags>
