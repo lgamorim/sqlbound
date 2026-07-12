@@ -3,6 +3,7 @@
   <PropertyGroup>
     <Description>MySQL introspection and type mapping for SqlBound.</Description>
     <TrackPublicApi>true</TrackPublicApi>
+    <PackageTags>$(PackageTags);mysql</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

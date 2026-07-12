@@ -3,6 +3,7 @@
   <PropertyGroup>
     <Description>SQLite introspection and type mapping for SqlBound.</Description>
     <TrackPublicApi>true</TrackPublicApi>
+    <PackageTags>$(PackageTags);sqlite</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

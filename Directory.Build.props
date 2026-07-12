@@ -27,6 +27,8 @@
     <Authors>Luís Amorim</Authors>
     <PackageVersion>1.0.0-preview.1</PackageVersion>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>sql;ado.net;dapper;source-generator;native-aot;sqlx;query;database;migrations</PackageTags>
     <PackageProjectUrl>https://github.com/lgamorim/sqlbound</PackageProjectUrl>
     <RepositoryUrl>https://github.com/lgamorim/sqlbound</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -35,6 +37,11 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
+
+  <!-- The shared NuGet README (packed as README.md, referenced by PackageReadmeFile above). -->
+  <ItemGroup Condition="'$(IsPackable)' != 'false'">
+    <None Include="$(MSBuildThisFileDirectory)docs\nuget\README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
 
   <!--
     Test projects are exempt from public XML-doc enforcement and are never packed (coding-standards.md).

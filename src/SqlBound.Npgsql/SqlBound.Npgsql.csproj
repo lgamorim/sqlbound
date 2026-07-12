@@ -3,6 +3,7 @@
   <PropertyGroup>
     <Description>PostgreSQL introspection and type mapping for SqlBound.</Description>
     <TrackPublicApi>true</TrackPublicApi>
+    <PackageTags>$(PackageTags);postgresql;postgres;npgsql</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
