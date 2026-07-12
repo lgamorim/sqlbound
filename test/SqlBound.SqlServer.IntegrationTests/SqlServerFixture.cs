@@ -76,6 +76,13 @@ public sealed class SqlServerFixture : IAsyncLifetime
 
     public async Task<SqlConnection> OpenConnectionAsync()
     {
+        var connection = new SqlConnection(GetConnectionString());
+        await connection.OpenAsync();
+        return connection;
+    }
+
+    public string GetConnectionString()
+    {
         if (_startupFailure is not null)
         {
             if (Environment.GetEnvironmentVariable("CI") is "true" or "1")
@@ -87,8 +94,6 @@ public sealed class SqlServerFixture : IAsyncLifetime
             Assert.Skip($"SQL Server container unavailable (is Docker running?): {_startupFailure.Message}");
         }
 
-        var connection = new SqlConnection(_container.GetConnectionString());
-        await connection.OpenAsync();
-        return connection;
+        return _container.GetConnectionString();
     }
 }

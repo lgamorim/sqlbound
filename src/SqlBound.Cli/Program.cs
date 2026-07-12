@@ -44,5 +44,6 @@ var root = new RootCommand("SqlBound: compile-time verified SQL for .NET.")
 {
     prepareCommand,
     MigrateCommand.Build(),
+    DatabaseCommand.Build(),
 };
 return await root.Parse(args).InvokeAsync();
