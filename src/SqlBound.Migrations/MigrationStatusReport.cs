@@ -5,13 +5,13 @@ namespace SqlBound.Migrations;
 /// ordered by version. This is the read-only view behind <c>migrate status</c>; unlike
 /// <see cref="MigrationPlan"/> it reports drift and missing migrations rather than throwing on them.
 /// </summary>
-public static class MigrationStatusReport
+internal static class MigrationStatusReport
 {
     /// <summary>Classifies every known migration into its state relative to the ledger.</summary>
     /// <param name="migrations">The migrations on disk, as loaded from the directory.</param>
     /// <param name="applied">The migrations the ledger records as applied.</param>
     /// <returns>One status per migration known to either source, ascending by version.</returns>
-    public static IReadOnlyList<MigrationStatus> Build(
+    internal static IReadOnlyList<MigrationStatus> Build(
         IReadOnlyList<Migration> migrations, IReadOnlyList<AppliedMigration> applied)
     {
         var migrationsByVersion = migrations.ToDictionary(migration => migration.Version);

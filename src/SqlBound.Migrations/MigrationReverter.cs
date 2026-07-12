@@ -5,7 +5,7 @@ namespace SqlBound.Migrations;
 /// selection fails if that migration's files are gone or it ships no down script, so the caller
 /// never runs a rollback it cannot honor.
 /// </summary>
-public static class MigrationReverter
+internal static class MigrationReverter
 {
     /// <summary>Chooses the migration to revert.</summary>
     /// <param name="migrations">The migrations on disk, as loaded from the directory.</param>
@@ -14,7 +14,7 @@ public static class MigrationReverter
     /// <exception cref="MigrationInconsistencyException">
     /// The most recently applied migration is missing from disk or is irreversible.
     /// </exception>
-    public static Migration? Plan(IReadOnlyList<Migration> migrations, IReadOnlyList<AppliedMigration> applied)
+    internal static Migration? Plan(IReadOnlyList<Migration> migrations, IReadOnlyList<AppliedMigration> applied)
     {
         if (applied.Count == 0)
         {

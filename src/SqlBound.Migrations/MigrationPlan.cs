@@ -7,7 +7,7 @@ namespace SqlBound.Migrations;
 /// that is already applied.
 /// </summary>
 /// <param name="Pending">The migrations to apply, ascending by version.</param>
-public sealed record MigrationPlan(IReadOnlyList<Migration> Pending)
+internal sealed record MigrationPlan(IReadOnlyList<Migration> Pending)
 {
     /// <summary>Computes the plan, validating the directory against the applied history.</summary>
     /// <param name="migrations">The migrations on disk, as loaded from the directory.</param>
@@ -15,7 +15,7 @@ public sealed record MigrationPlan(IReadOnlyList<Migration> Pending)
     /// <exception cref="MigrationInconsistencyException">
     /// An applied migration's checksum has drifted, or a pending migration is out of order.
     /// </exception>
-    public static MigrationPlan Create(
+    internal static MigrationPlan Create(
         IReadOnlyList<Migration> migrations, IReadOnlyList<AppliedMigration> applied)
     {
         var appliedByVersion = applied.ToDictionary(row => row.Version);

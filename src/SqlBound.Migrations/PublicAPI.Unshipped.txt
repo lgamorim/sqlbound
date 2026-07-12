@@ -42,11 +42,6 @@ SqlBound.Migrations.MigrationFormatException
 SqlBound.Migrations.MigrationFormatException.MigrationFormatException(string! message) -> void
 SqlBound.Migrations.MigrationInconsistencyException
 SqlBound.Migrations.MigrationInconsistencyException.MigrationInconsistencyException(string! message) -> void
-SqlBound.Migrations.MigrationPlan
-SqlBound.Migrations.MigrationPlan.MigrationPlan(System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.Migration!>! Pending) -> void
-SqlBound.Migrations.MigrationPlan.Pending.get -> System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.Migration!>!
-SqlBound.Migrations.MigrationPlan.Pending.init -> void
-SqlBound.Migrations.MigrationReverter
 SqlBound.Migrations.MigrationRunner
 SqlBound.Migrations.MigrationState
 SqlBound.Migrations.MigrationState.Applied = 0 -> SqlBound.Migrations.MigrationState
@@ -63,11 +58,7 @@ SqlBound.Migrations.MigrationStatus.State.get -> SqlBound.Migrations.MigrationSt
 SqlBound.Migrations.MigrationStatus.State.init -> void
 SqlBound.Migrations.MigrationStatus.Version.get -> long
 SqlBound.Migrations.MigrationStatus.Version.init -> void
-SqlBound.Migrations.MigrationStatusReport
 static SqlBound.Migrations.MigrationDirectory.Load(string! path) -> System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.Migration!>!
-static SqlBound.Migrations.MigrationPlan.Create(System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.Migration!>! migrations, System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.AppliedMigration!>! applied) -> SqlBound.Migrations.MigrationPlan!
-static SqlBound.Migrations.MigrationReverter.Plan(System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.Migration!>! migrations, System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.AppliedMigration!>! applied) -> SqlBound.Migrations.Migration?
 static SqlBound.Migrations.MigrationRunner.RevertAsync(System.Data.Common.DbConnection! connection, SqlBound.Migrations.IMigrationLedger! ledger, System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.Migration!>! migrations, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<SqlBound.Migrations.Migration?>!
 static SqlBound.Migrations.MigrationRunner.RunAsync(System.Data.Common.DbConnection! connection, SqlBound.Migrations.IMigrationLedger! ledger, System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.Migration!>! migrations, System.TimeProvider! timeProvider, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.AppliedMigration!>!>!
 static SqlBound.Migrations.MigrationRunner.StatusAsync(System.Data.Common.DbConnection! connection, SqlBound.Migrations.IMigrationLedger! ledger, System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.Migration!>! migrations, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.MigrationStatus!>!>!
-static SqlBound.Migrations.MigrationStatusReport.Build(System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.Migration!>! migrations, System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.AppliedMigration!>! applied) -> System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.MigrationStatus!>!
