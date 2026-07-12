@@ -6,8 +6,10 @@ reflection-free row materialization via a Roslyn incremental source generator, S
 migrations, and clean coexistence with [Dapper](https://github.com/DapperLib/Dapper) in the same
 project.
 
-Status: **v0.5.0** — Phases 1–5 (Bedrock, Codegen, Verification, Providers, Migrations & CLI) are
-complete. Phase 6 (Ship — API freeze and the 1.0 release) is still ahead; see [Roadmap](#roadmap).
+Status: **v1.0.0-rc.1** — release candidate under review. Phases 1–5 (Bedrock, Codegen, Verification,
+Providers, Migrations & CLI) are complete, and Phase 6 (Ship — API freeze and the 1.0 release) is in
+progress; the stable `1.0.0` follows once the candidate is validated. See [Roadmap](#roadmap) and the
+[changelog](CHANGELOG.md).
 
 ## Why
 
@@ -19,7 +21,8 @@ turning a class of runtime SQL errors into compiler diagnostics.
 
 The two libraries are designed to coexist on the same `DbConnection`/`DbTransaction` with zero
 conflict — SqlBound never owns a connection and never defines `Query*`/`Execute*` extension
-methods that would collide with Dapper's.
+methods that would collide with Dapper's. See
+[docs/dapper-coexistence.md](docs/dapper-coexistence.md) for a side-by-side guide.
 
 ## Quick start
 
@@ -121,6 +124,7 @@ Architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/):
 - [0005](docs/adr/0005-sqlite-describe-scope.md) — SQLite describe stays dry-run-only; computed columns and parameter types are out of scope
 - [0006](docs/adr/0006-migration-file-format.md) — migrations are paired up/down SQL files with a timestamp version and a checksummed ledger
 - [0007](docs/adr/0007-mysql-migrations-not-transactional.md) — MySQL migrations are not transactional, because MySQL commits DDL implicitly
+- [0008](docs/adr/0008-api-stability-and-shipping.md) — the 1.0 public-API stability commitment, strong-naming, package signing, and the documentation site
 
 ## Performance
 
@@ -144,8 +148,8 @@ minor version:
 | 3 — Verification | M7–M9 | Done (`v0.3.0`) |
 | 4 — Providers | M10–M12 | Done (`v0.4.0`) |
 | 5 — Migrations & CLI | M13–M15 | Done (`v0.5.0`) |
-| 6 — Ship | M16 | Planned (`v1.0.0`) |
+| 6 — Ship | M16 | Release candidate (`v1.0.0-rc.1`) |
 
 ## License
 
-[Apache-2.0](LICENSE)
+Copyright 2026 Luís Amorim. Licensed under the [Apache License 2.0](LICENSE).
