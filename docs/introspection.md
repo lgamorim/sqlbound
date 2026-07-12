@@ -95,3 +95,51 @@ real, embedded SQLite database — no container needed. Each test opens its own 
 named, shared-cache in-memory database (`Mode=Memory;Cache=Shared`) seeded once per test assembly,
 because `sqlite3_errmsg` reflects the last operation on a connection handle: sharing one open
 connection across parallel tests would let them observe each other's errors.
+
+## PostgreSQL (`SqlBound.Npgsql`)
+
+Postgres's wire protocol has a native, describe-only operation the other two providers can only
+approximate: the extended query protocol's `Describe` message, exposed through Npgsql as
+`CommandBehavior.SchemaOnly`. It never executes the statement — like SQL Server's `sp_describe_*`
+and SQLite's `sqlite3_prepare_v2` — but unlike SQLite's `sqlite3_column_decltype`, it resolves a
+real type for *every* result column, including computed and aggregate ones, because Postgres's
+planner resolves an expression's result type as part of parsing, not by inspecting a stored
+`CREATE TABLE` declaration.
+
+### Mechanism
+
+- **Parameters** come from `NpgsqlCommandBuilder.DeriveParameters`, which infers a real type per
+  placeholder from how it's used — the closest of the three providers to SQL Server's
+  `sp_describe_undeclared_parameters`. It also reliably primes Npgsql's `@name` → `$N` rewriter,
+  which is why the describer derives parameters before describing columns even for a statement
+  with no placeholders.
+- **Result columns** come from `CommandBehavior.SchemaOnly`'s column schema
+  (`NpgsqlDbColumn.DataTypeName`), which resolves for computed and aggregate columns as well as
+  direct table references.
+- **Nullability** needs one further step `SchemaOnly` doesn't provide directly: for a column that
+  is a direct table reference, `SchemaOnly` still reports the source table's OID and the column's
+  attribute number (straight from the protocol's `RowDescription`, no execution needed), which one
+  `SELECT attnotnull FROM pg_attribute WHERE attrelid = @tableOid AND attnum = @attNum` resolves
+  into a real nullability flag. A computed/aggregate column has no source table to look up and
+  defaults to nullable — the same safe-direction convention SQLite's provider uses for the columns
+  it can describe at all.
+
+### Known limits
+
+- **`timestamp with time zone`, `time`, `interval`, `json`/`jsonb`, and array types are
+  unmapped** — no generator-supported reader getter exists for them yet, the same rationale as SQL
+  Server's `datetimeoffset`/`xml` rejection.
+- **Ambiguous parameter usage fails describe**, same as SQL Server: a placeholder compared against
+  incompatible column types (e.g. `id = @p OR name = @p`) fails during `DeriveParameters` with a
+  `SqlBoundDescribeException`.
+- Unlike SQLite, **no columns need to be rejected as undescribable** — the `Describe` message's
+  planner-level type resolution covers `COUNT(*)`, arithmetic, `CAST`, and other expressions that
+  SQLite's purely syntactic `decltype` cannot.
+
+### Testing
+
+Unit tests cover the type map exhaustively. Integration tests exercise the describer against a
+real Postgres 16 started per test run via [Testcontainers](https://dotnet.testcontainers.org/),
+same skip-locally/fail-in-CI policy as the SQL Server suite. Npgsql has no MARS (multiple
+concurrent operations on one connection); the nullability lookup's own command only runs after the
+`SchemaOnly` reader from the column describe step is fully disposed.
