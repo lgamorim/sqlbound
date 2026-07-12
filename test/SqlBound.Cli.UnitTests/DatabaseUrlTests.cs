@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Data.SqlClient;
+using Npgsql;
 
 namespace SqlBound.Cli.UnitTests;
 
@@ -93,5 +94,57 @@ public sealed class DatabaseUrlTests
     public void Should_ThrowArgumentException_When_SqliteUrlHasNoPath()
     {
         Assert.Throws<ArgumentException>(() => DatabaseUrl.Resolve("sqlite://"));
+    }
+
+    [Fact]
+    public void Should_MapAllUrlParts_When_UrlIsCompletePostgres()
+    {
+        var target = DatabaseUrl.Resolve(
+            "postgresql://sa:P%40ssw0rd@db.example.com:6432/shop?Pooling=false");
+
+        Assert.Equal(DatabaseProviders.Postgres, target.Provider);
+        var builder = new NpgsqlConnectionStringBuilder(target.ConnectionString);
+        Assert.Equal("db.example.com", builder.Host);
+        Assert.Equal(6432, builder.Port);
+        Assert.Equal("shop", builder.Database);
+        Assert.Equal("sa", builder.Username);
+        Assert.Equal("P@ssw0rd", builder.Password);
+        Assert.False(builder.Pooling);
+    }
+
+    [Fact]
+    public void Should_AcceptThePostgresSchemeAlias_When_UrlUsesPostgresInsteadOfPostgresql()
+    {
+        var target = DatabaseUrl.Resolve("postgres://localhost/shop");
+
+        Assert.Equal(DatabaseProviders.Postgres, target.Provider);
+        var builder = new NpgsqlConnectionStringBuilder(target.ConnectionString);
+        Assert.Equal("localhost", builder.Host);
+        Assert.Equal("shop", builder.Database);
+    }
+
+    [Fact]
+    public void Should_OmitPortAndDatabase_When_PostgresUrlOmitsThem()
+    {
+        var target = DatabaseUrl.Resolve("postgresql://localhost");
+
+        var builder = new NpgsqlConnectionStringBuilder(target.ConnectionString);
+        Assert.Equal("localhost", builder.Host);
+        Assert.Null(builder.Database);
+    }
+
+    [Fact]
+    public void Should_ThrowArgumentException_When_PostgresUrlHasNoHost()
+    {
+        Assert.Throws<ArgumentException>(() => DatabaseUrl.Resolve("postgresql://"));
+    }
+
+    [Fact]
+    public void Should_ThrowArgumentExceptionNamingTheOption_When_PostgresUrlQueryHasUnknownOption()
+    {
+        var exception = Assert.Throws<ArgumentException>(
+            () => DatabaseUrl.Resolve("postgresql://localhost/shop?NoSuchOption=1"));
+
+        Assert.Contains("NoSuchOption", exception.Message);
     }
 }
