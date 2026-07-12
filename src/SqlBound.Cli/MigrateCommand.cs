@@ -15,6 +15,7 @@ internal static class MigrateCommand
             BuildAdd(),
             BuildRun(),
             BuildRevert(),
+            BuildStatus(),
         };
 
     private static Command BuildAdd()
@@ -126,6 +127,46 @@ internal static class MigrateCommand
             cancellationToken));
 
         return revertCommand;
+    }
+
+    private static Command BuildStatus()
+    {
+        var migrationsOption = MigrationsOption();
+        var connectionOption = ConnectionOption();
+
+        var statusCommand = new Command("status", "Show each migration's state: applied, pending, drifted, or missing.")
+        {
+            migrationsOption,
+            connectionOption,
+        };
+        statusCommand.SetAction((parseResult, cancellationToken) => MigrationCli.ExecuteAsync(
+            parseResult.GetValue(connectionOption),
+            ResolveDirectory(parseResult.GetValue(migrationsOption)),
+            async (connection, ledger, migrations) =>
+            {
+                var report = await MigrationRunner
+                    .StatusAsync(connection, ledger, migrations, cancellationToken)
+                    .ConfigureAwait(false);
+                if (report.Count == 0)
+                {
+                    Console.Out.WriteLine("no migrations.");
+                    return 0;
+                }
+
+                foreach (var status in report)
+                {
+                    var appliedOn = status.AppliedOnUtc is { } when
+                        ? $"  {when:yyyy-MM-dd HH:mm:ss}Z"
+                        : string.Empty;
+                    Console.Out.WriteLine(
+                        $"{status.Version}_{status.Name}  {status.State.ToString().ToLowerInvariant()}{appliedOn}");
+                }
+
+                return 0;
+            },
+            cancellationToken));
+
+        return statusCommand;
     }
 
     private static Option<string?> MigrationsOption() =>

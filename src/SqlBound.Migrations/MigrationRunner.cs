@@ -81,6 +81,23 @@ public static class MigrationRunner
         }
     }
 
+    /// <summary>Reports each migration's state relative to the ledger, without changing anything.</summary>
+    /// <param name="connection">An open connection to the target database.</param>
+    /// <param name="ledger">The migration ledger for the target provider.</param>
+    /// <param name="migrations">The migrations on disk, as loaded from the directory.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>One status per migration known to disk or the ledger, ascending by version.</returns>
+    public static async Task<IReadOnlyList<MigrationStatus>> StatusAsync(
+        DbConnection connection,
+        IMigrationLedger ledger,
+        IReadOnlyList<Migration> migrations,
+        CancellationToken cancellationToken)
+    {
+        await ledger.EnsureCreatedAsync(connection, cancellationToken).ConfigureAwait(false);
+        var applied = await ledger.GetAppliedAsync(connection, cancellationToken).ConfigureAwait(false);
+        return MigrationStatusReport.Build(migrations, applied);
+    }
+
     private static async Task<AppliedMigration> ApplyAsync(
         DbConnection connection,
         IMigrationLedger ledger,
