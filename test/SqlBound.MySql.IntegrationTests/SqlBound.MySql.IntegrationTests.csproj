@@ -10,9 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SqlBound.Cli\SqlBound.Cli.csproj" />
-    <ProjectReference Include="..\..\src\SqlBound.Generators\SqlBound.Generators.csproj" />
-    <ProjectReference Include="..\..\src\SqlBound\SqlBound.csproj" />
+    <ProjectReference Include="..\..\src\SqlBound.MySql\SqlBound.MySql.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,9 +19,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
-    <PackageReference Include="Testcontainers.MsSql" Version="4.13.0" />
     <PackageReference Include="Testcontainers.MySql" Version="4.13.0" />
-    <PackageReference Include="Testcontainers.PostgreSql" Version="4.13.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

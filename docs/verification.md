@@ -16,10 +16,10 @@ dotnet sqlbound prepare --project src/MyApp
 
 - `SQLBOUND_DATABASE_URL` accepts a `sqlserver://user:pass@host:port/database?Option=value` URL,
   a `sqlite://<path>` URL, a `postgresql://user:pass@host:port/database?Option=value` URL
-  (`postgres://` also works), or a raw ADO.NET connection string (treated as SQL Server, for
-  backward compatibility with the single-provider convention M7 introduced); `--connection`
-  overrides the environment variable. See [introspection.md](introspection.md) for what each
-  provider can and cannot describe.
+  (`postgres://` also works), a `mysql://user:pass@host:port/database?Option=value` URL, or a raw
+  ADO.NET connection string (treated as SQL Server, for backward compatibility with the
+  single-provider convention M7 introduced); `--connection` overrides the environment variable.
+  See [introspection.md](introspection.md) for what each provider can and cannot describe.
 - Prepare walks the project's C# sources (no build required), describes each distinct command
   text, and reconciles `.sqlbound/`: one `query-<sha256>.json` per query, keyed by the hash of
   the raw command text, with orphaned files pruned. **Commit the `.sqlbound/` directory.**

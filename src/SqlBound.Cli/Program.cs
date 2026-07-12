@@ -7,7 +7,7 @@ var projectOption = new Option<string>("--project")
 };
 var connectionOption = new Option<string?>("--connection")
 {
-    Description = $"Connection string, sqlserver:// URL, sqlite:// URL, or postgresql:// URL (default: the {DatabaseUrl.EnvironmentVariable} environment variable).",
+    Description = $"Connection string, sqlserver:// URL, sqlite:// URL, postgresql:// URL, or mysql:// URL (default: the {DatabaseUrl.EnvironmentVariable} environment variable).",
 };
 var checkOption = new Option<bool>("--check")
 {
