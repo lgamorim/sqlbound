@@ -4,9 +4,9 @@ SqlBound applies schema changes as ordered SQL-file migrations, tracked in a dat
 This document covers the on-disk format, the ledger, and the CLI commands. The format decisions are
 recorded in [ADR 0006](adr/0006-migration-file-format.md).
 
-> **Status.** M13 ships the migration model, the SQL Server ledger, `migrate add`, and
-> `database create`/`database drop`. Applying and reverting migrations (`migrate run`, `migrate
-> revert`, `migrate status`) arrives in M14, and the other providers in M15.
+> **Status.** The full command set — `migrate add`, `migrate run`, `migrate revert`, `migrate
+> status`, and `database create`/`database drop` — works against **SQL Server**. The other providers
+> follow in M15.
 
 ## File format
 
@@ -67,6 +67,55 @@ dotnet sqlbound migrate add "backfill emails" --irreversible
 - The name is slugged to `snake_case`; `"create items"` becomes `create_items`.
 - `--migrations <dir>` sets the directory (default `./migrations`); it is created if missing.
 - `--irreversible` writes only the up script.
+
+### `migrate run`
+
+Applies every pending migration, in version order:
+
+```bash
+export SQLBOUND_DATABASE_URL="sqlserver://sa:password@localhost:1433/myapp?TrustServerCertificate=true"
+dotnet sqlbound migrate run
+# applied 20260712143000_create_items (18 ms)
+# applied 1 migration(s).
+```
+
+- Each migration's up-script and its ledger row commit in **one transaction**. If a script fails,
+  that migration is rolled back and the run stops; every earlier migration stays applied.
+- `run` refuses to proceed on two inconsistencies: an already-applied migration whose up-script has
+  been **edited** (checksum drift), and a **pending migration ordered before** one already applied
+  (a late-merged branch). Fix the directory rather than the database.
+- `--migrations <dir>` and `--connection` work as elsewhere.
+
+> **Batch separators.** Each script runs as a single command; SQL Server's `GO` separator is **not**
+> supported, so a migration needing multiple batches (e.g. `CREATE PROCEDURE` followed by more SQL)
+> must be split into separate migrations. This may be revisited in a later release.
+
+### `migrate revert`
+
+Rolls back the most recently applied migration by running its down-script:
+
+```bash
+dotnet sqlbound migrate revert
+# reverted 20260712143000_create_items.
+```
+
+- The down-script and the ledger removal commit in one transaction.
+- `revert` refuses if the target migration is **irreversible** (no down script) or its files are
+  **missing**; it is a no-op ("nothing to revert") when the ledger is empty.
+- Reverts one migration per invocation.
+
+### `migrate status`
+
+Reports each migration's state without changing anything:
+
+```bash
+dotnet sqlbound migrate status
+# 20260712143000_create_items  applied  2026-07-12 14:30:07Z
+# 20260712150000_backfill_emails  pending
+```
+
+- States: **applied**, **pending**, **drifted** (up-script edited since it was applied), and
+  **missing** (in the ledger, but the file is gone).
 
 ### `database create` / `database drop`
 

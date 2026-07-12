@@ -4,8 +4,9 @@ namespace SqlBound.Migrations;
 
 /// <summary>
 /// The per-provider migration history table (<c>_sqlbound_migrations</c>): the durable record of
-/// which migrations have been applied. M13 defines the read side; the write side arrives with
-/// <c>migrate run</c>. Implementations own only the SQL — they never open or close the connection.
+/// which migrations have been applied. Implementations own only the SQL — they never open or close
+/// the connection. The write methods take the ambient transaction so the ledger row commits
+/// atomically with the migration's own script; the read methods run outside any transaction.
 /// </summary>
 public interface IMigrationLedger
 {
@@ -19,4 +20,20 @@ public interface IMigrationLedger
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>The applied migrations; empty when none have been applied.</returns>
     Task<IReadOnlyList<AppliedMigration>> GetAppliedAsync(DbConnection connection, CancellationToken cancellationToken);
+
+    /// <summary>Records a migration as applied, on the given transaction.</summary>
+    /// <param name="connection">An open connection to the target database.</param>
+    /// <param name="transaction">The transaction the migration's up-script is running on, or <see langword="null"/>.</param>
+    /// <param name="migration">The migration to record.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    Task RecordAppliedAsync(
+        DbConnection connection, DbTransaction? transaction, AppliedMigration migration, CancellationToken cancellationToken);
+
+    /// <summary>Removes a migration's row from the ledger, on the given transaction.</summary>
+    /// <param name="connection">An open connection to the target database.</param>
+    /// <param name="transaction">The transaction the migration's down-script is running on, or <see langword="null"/>.</param>
+    /// <param name="version">The version of the migration to remove.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    Task RemoveAsync(
+        DbConnection connection, DbTransaction? transaction, long version, CancellationToken cancellationToken);
 }
