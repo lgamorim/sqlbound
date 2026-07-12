@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Data.SqlClient;
+using MySqlConnector;
 using Npgsql;
 
 namespace SqlBound.Cli.UnitTests;
@@ -144,6 +145,47 @@ public sealed class DatabaseUrlTests
     {
         var exception = Assert.Throws<ArgumentException>(
             () => DatabaseUrl.Resolve("postgresql://localhost/shop?NoSuchOption=1"));
+
+        Assert.Contains("NoSuchOption", exception.Message);
+    }
+
+    [Fact]
+    public void Should_MapAllUrlParts_When_UrlIsCompleteMySql()
+    {
+        var target = DatabaseUrl.Resolve(
+            "mysql://sa:P%40ssw0rd@db.example.com:3307/shop?Pooling=false");
+
+        Assert.Equal(DatabaseProviders.MySql, target.Provider);
+        var builder = new MySqlConnectionStringBuilder(target.ConnectionString);
+        Assert.Equal("db.example.com", builder.Server);
+        Assert.Equal(3307u, builder.Port);
+        Assert.Equal("shop", builder.Database);
+        Assert.Equal("sa", builder.UserID);
+        Assert.Equal("P@ssw0rd", builder.Password);
+        Assert.False(builder.Pooling);
+    }
+
+    [Fact]
+    public void Should_OmitPortAndDatabase_When_MySqlUrlOmitsThem()
+    {
+        var target = DatabaseUrl.Resolve("mysql://localhost");
+
+        var builder = new MySqlConnectionStringBuilder(target.ConnectionString);
+        Assert.Equal("localhost", builder.Server);
+        Assert.Equal(string.Empty, builder.Database);
+    }
+
+    [Fact]
+    public void Should_ThrowArgumentException_When_MySqlUrlHasNoHost()
+    {
+        Assert.Throws<ArgumentException>(() => DatabaseUrl.Resolve("mysql://"));
+    }
+
+    [Fact]
+    public void Should_ThrowArgumentExceptionNamingTheOption_When_MySqlUrlQueryHasUnknownOption()
+    {
+        var exception = Assert.Throws<ArgumentException>(
+            () => DatabaseUrl.Resolve("mysql://localhost/shop?NoSuchOption=1"));
 
         Assert.Contains("NoSuchOption", exception.Message);
     }

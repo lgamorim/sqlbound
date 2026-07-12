@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Data.SqlClient;
+using MySqlConnector;
 using Npgsql;
 
 namespace SqlBound.Cli;
@@ -9,10 +10,10 @@ internal readonly record struct DatabaseTarget(string Provider, string Connectio
 
 /// <summary>
 /// Resolves the value of <c>SQLBOUND_DATABASE_URL</c> (or <c>--connection</c>) into a
-/// <see cref="DatabaseTarget"/>. Accepts a <c>sqlserver://</c>, <c>sqlite://</c>, or
-/// <c>postgresql://</c>/<c>postgres://</c> URL, or - for backward compatibility with SQL Server's
-/// original single-provider convention - a raw ADO.NET connection string passed through verbatim
-/// as SQL Server.
+/// <see cref="DatabaseTarget"/>. Accepts a <c>sqlserver://</c>, <c>sqlite://</c>,
+/// <c>postgresql://</c>/<c>postgres://</c>, or <c>mysql://</c> URL, or - for backward
+/// compatibility with SQL Server's original single-provider convention - a raw ADO.NET connection
+/// string passed through verbatim as SQL Server.
 /// </summary>
 internal static class DatabaseUrl
 {
@@ -22,6 +23,8 @@ internal static class DatabaseUrl
     private const string SqliteScheme = "sqlite://";
     private const string PostgresScheme = "postgresql://";
     private const string PostgresSchemeAlias = "postgres://";
+    private const string MySqlScheme = "mysql://";
+    private const uint MySqlDefaultPort = 3306;
 
     public static DatabaseTarget Resolve(string value)
     {
@@ -38,6 +41,11 @@ internal static class DatabaseUrl
         if (value.StartsWith(PostgresSchemeAlias, StringComparison.OrdinalIgnoreCase))
         {
             return new DatabaseTarget(DatabaseProviders.Postgres, ToPostgresConnectionString(value, PostgresSchemeAlias));
+        }
+
+        if (value.StartsWith(MySqlScheme, StringComparison.OrdinalIgnoreCase))
+        {
+            return new DatabaseTarget(DatabaseProviders.MySql, ToMySqlConnectionString(value));
         }
 
         if (!value.StartsWith(SqlServerScheme, StringComparison.OrdinalIgnoreCase))
@@ -133,6 +141,53 @@ internal static class DatabaseUrl
         {
             var separator = url.UserInfo.IndexOf(':');
             builder.Username = Uri.UnescapeDataString(separator < 0 ? url.UserInfo : url.UserInfo[..separator]);
+            if (separator >= 0)
+            {
+                builder.Password = Uri.UnescapeDataString(url.UserInfo[(separator + 1)..]);
+            }
+        }
+
+        foreach (var option in url.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var separator = option.IndexOf('=');
+            var key = Uri.UnescapeDataString(separator < 0 ? option : option[..separator]);
+            var optionValue = separator < 0 ? string.Empty : Uri.UnescapeDataString(option[(separator + 1)..]);
+            try
+            {
+                builder[key] = optionValue;
+            }
+            catch (Exception exception) when (exception is ArgumentException or KeyNotFoundException or FormatException)
+            {
+                throw new ArgumentException($"Unsupported connection option '{key}' in '{value}'.", exception);
+            }
+        }
+
+        return builder.ConnectionString;
+    }
+
+    private static string ToMySqlConnectionString(string value)
+    {
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var url) || url.Host.Length == 0)
+        {
+            throw new ArgumentException($"'{value}' is not a valid mysql:// URL.");
+        }
+
+        var builder = new MySqlConnectionStringBuilder
+        {
+            Server = url.Host,
+            Port = url.IsDefaultPort ? MySqlDefaultPort : (uint)url.Port,
+        };
+
+        var database = url.AbsolutePath.TrimStart('/');
+        if (database.Length > 0)
+        {
+            builder.Database = Uri.UnescapeDataString(database);
+        }
+
+        if (url.UserInfo.Length > 0)
+        {
+            var separator = url.UserInfo.IndexOf(':');
+            builder.UserID = Uri.UnescapeDataString(separator < 0 ? url.UserInfo : url.UserInfo[..separator]);
             if (separator >= 0)
             {
                 builder.Password = Uri.UnescapeDataString(url.UserInfo[(separator + 1)..]);

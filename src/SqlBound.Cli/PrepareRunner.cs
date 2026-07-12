@@ -1,8 +1,10 @@
 using System.Data.Common;
 using Microsoft.Data.Sqlite;
 using Microsoft.Data.SqlClient;
+using MySqlConnector;
 using Npgsql;
 using SqlBound.Introspection;
+using SqlBound.MySql;
 using SqlBound.Npgsql;
 using SqlBound.Sqlite;
 using SqlBound.SqlServer;
@@ -45,7 +47,7 @@ internal static class PrepareRunner
             {
                 await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception exception) when (exception is SqlException or SqliteException or NpgsqlException or InvalidOperationException)
+            catch (Exception exception) when (exception is SqlException or SqliteException or NpgsqlException or MySqlException or InvalidOperationException)
             {
                 output.WriteLine($"error: cannot connect to the database: {exception.Message}");
                 return 1;
@@ -119,6 +121,7 @@ internal static class PrepareRunner
     {
         DatabaseProviders.Sqlite => new SqliteConnection(target.ConnectionString),
         DatabaseProviders.Postgres => new NpgsqlConnection(target.ConnectionString),
+        DatabaseProviders.MySql => new MySqlConnection(target.ConnectionString),
         _ => new SqlConnection(target.ConnectionString),
     };
 
@@ -126,6 +129,7 @@ internal static class PrepareRunner
     {
         DatabaseProviders.Sqlite => new SqliteQueryDescriber(),
         DatabaseProviders.Postgres => new NpgsqlQueryDescriber(),
+        DatabaseProviders.MySql => new MySqlQueryDescriber(),
         _ => new SqlServerQueryDescriber(),
     };
 }
