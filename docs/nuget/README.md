@@ -52,4 +52,4 @@ SQL-file migrations, each reflecting what the underlying engine actually support
 
 ## License
 
-Apache-2.0
+Copyright 2026 Luís Amorim. Licensed under the [Apache License 2.0](https://github.com/lgamorim/sqlbound/blob/master/LICENSE).
