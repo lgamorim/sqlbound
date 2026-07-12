@@ -55,7 +55,7 @@ internal static class SnapshotWriter
                 var parameter = description.Parameters[i];
                 builder.Append(
                     $"    {{ \"name\": {Quote(parameter.Name)}, \"sqlTypeName\": {Quote(parameter.SqlTypeName)}, " +
-                    $"\"clrTypeText\": {Quote(parameter.ClrTypeText)} }}");
+                    $"\"clrTypeText\": {QuoteOrNull(parameter.ClrTypeText)} }}");
                 builder.Append(i < description.Parameters.Count - 1 ? ",\n" : "\n");
             }
 
@@ -65,6 +65,8 @@ internal static class SnapshotWriter
         builder.Append("}\n");
         return builder.ToString();
     }
+
+    private static string QuoteOrNull(string? value) => value is null ? "null" : Quote(value);
 
     private static string Quote(string value)
     {

@@ -65,6 +65,21 @@ public sealed class SnapshotWriterTests
     }
 
     [Fact]
+    public void Should_SerializeNullClrTypeText_When_ParameterTypeIsUnknown()
+    {
+        var description = new QueryDescription([], [new DescribedParameter("id", string.Empty, ClrTypeText: null)]);
+
+        var serialized = SnapshotWriter.Serialize("SELECT id FROM items WHERE id = @id", description);
+
+        Assert.Contains("\"clrTypeText\": null }", serialized);
+
+        var read = Generators.QuerySnapshotReader.TryRead(serialized, out var snapshot);
+        Assert.True(read);
+        var parameter = Assert.Single(snapshot!.Parameters);
+        Assert.Null(parameter.ClrTypeText);
+    }
+
+    [Fact]
     public void Should_NameFileWithAnalyzerKey_When_PairingSnapshotWithQuery()
     {
         const string commandText = "SELECT Id FROM dbo.Items";

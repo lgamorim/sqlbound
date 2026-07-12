@@ -22,4 +22,4 @@ internal sealed record SnapshotColumn(
 internal sealed record SnapshotParameter(
     string Name,
     string SqlTypeName,
-    string ClrTypeText);
+    string? ClrTypeText);
