@@ -82,6 +82,8 @@ Architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/):
 - [0002](docs/adr/0002-generator-snapshot-consumption.md) — the generator emits from the declared signature alone; it never reads snapshots
 - [0003](docs/adr/0003-verification-opt-in-by-snapshot-presence.md) — a project with no `.sqlbound/` snapshots gets no verification diagnostics
 - [0004](docs/adr/0004-prepare-is-cli-only.md) — `prepare` stays a CLI step; an MSBuild task is deferred
+- [0005](docs/adr/0005-sqlite-describe-scope.md) — SQLite describe stays dry-run-only; computed columns and parameter types are out of scope
+- [0006](docs/adr/0006-migration-file-format.md) — migrations are paired up/down SQL files with a timestamp version and a checksummed ledger
 
 ## Performance
 
