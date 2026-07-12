@@ -65,14 +65,22 @@ presence). See [docs/verification.md](docs/verification.md), [docs/diagnostics.m
 and [docs/introspection.md](docs/introspection.md) for the full workflow, the diagnostic catalog,
 and how SQL Server introspection works today.
 
+## Migrations
+
+Schema changes are ordered SQL-file migrations — paired `{version}_{name}.up.sql` / `.down.sql`
+files with a timestamp version — tracked in a `_sqlbound_migrations` ledger. `dotnet sqlbound
+migrate add` scaffolds a migration and `dotnet sqlbound database create`/`drop` manage the target
+database. Applying and reverting migrations land in M14. See [docs/migrations.md](docs/migrations.md).
+
 ## Packages
 
 | Package | Purpose |
 |---|---|
 | `SqlBound` | Runtime core — attributes, `SqlSession`, dependency-free. |
 | `SqlBound.Generators` | The incremental source generator and the verification analyzer. Packed as an analyzer, never a runtime dependency. |
-| `SqlBound.SqlServer` | SQL Server introspection (`sp_describe_first_result_set` / `sp_describe_undeclared_parameters`) and SQL-to-CLR type mapping. The pilot provider; SQLite, Postgres, and MySQL follow in Phase 4. |
-| `SqlBound.Cli` | The `sqlbound` dotnet tool — `prepare` today; `migrate`/`database` commands arrive with Phase 5. |
+| `SqlBound.SqlServer` / `.Sqlite` / `.Npgsql` / `.MySql` | Per-provider introspection and SQL-to-CLR type mapping. SQL Server is the pilot; SQLite, Postgres, and MySQL shipped in Phase 4. |
+| `SqlBound.Migrations` | Provider-neutral SQL-file migration model and the `IMigrationLedger` history contract. |
+| `SqlBound.Cli` | The `sqlbound` dotnet tool — `prepare`, `migrate add`, and `database create`/`drop`. |
 
 ## Design decisions
 
@@ -82,6 +90,8 @@ Architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/):
 - [0002](docs/adr/0002-generator-snapshot-consumption.md) — the generator emits from the declared signature alone; it never reads snapshots
 - [0003](docs/adr/0003-verification-opt-in-by-snapshot-presence.md) — a project with no `.sqlbound/` snapshots gets no verification diagnostics
 - [0004](docs/adr/0004-prepare-is-cli-only.md) — `prepare` stays a CLI step; an MSBuild task is deferred
+- [0005](docs/adr/0005-sqlite-describe-scope.md) — SQLite describe stays dry-run-only; computed columns and parameter types are out of scope
+- [0006](docs/adr/0006-migration-file-format.md) — migrations are paired up/down SQL files with a timestamp version and a checksummed ledger
 
 ## Performance
 
@@ -103,8 +113,8 @@ minor version:
 | 1 — Bedrock | M1–M3 | Done (`v0.1.0`) |
 | 2 — Codegen | M4–M6 | Done (`v0.2.0`) |
 | 3 — Verification | M7–M9 | Done (`v0.3.0`) |
-| 4 — Providers | M10– | Next |
-| 5 — Migrations & CLI | — | Planned |
+| 4 — Providers | M10–M12 | Done (`v0.4.0`) |
+| 5 — Migrations & CLI | M13– | In progress |
 | 6 — Ship | — | Planned (`v1.0.0`) |
 
 ## License

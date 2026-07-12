@@ -11,7 +11,7 @@
     <RollForward>Major</RollForward>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>sqlbound</ToolCommandName>
-    <Description>SqlBound command-line tool: prepare and verify offline query snapshots.</Description>
+    <Description>SqlBound command-line tool: prepare offline query snapshots, scaffold migrations, and manage the database.</Description>
   </PropertyGroup>
 
   <ItemGroup>

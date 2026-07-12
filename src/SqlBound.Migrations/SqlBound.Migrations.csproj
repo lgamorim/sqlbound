@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Provider-neutral SQL-file migration model and ledger contracts for SqlBound.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SqlBound.Migrations.UnitTests" />
+    <InternalsVisibleTo Include="SqlBound.Migrations.IntegrationTests" />
+  </ItemGroup>
+
+</Project>

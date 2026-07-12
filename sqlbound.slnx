@@ -6,6 +6,7 @@
     <Project Path="src/SqlBound.Cli/SqlBound.Cli.csproj" />
     <Project Path="src/SqlBound.Generators/SqlBound.Generators.csproj" />
     <Project Path="src/SqlBound.Introspection/SqlBound.Introspection.csproj" />
+    <Project Path="src/SqlBound.Migrations/SqlBound.Migrations.csproj" />
     <Project Path="src/SqlBound.MySql/SqlBound.MySql.csproj" />
     <Project Path="src/SqlBound.Npgsql/SqlBound.Npgsql.csproj" />
     <Project Path="src/SqlBound.Sqlite/SqlBound.Sqlite.csproj" />
@@ -18,6 +19,8 @@
     <Project Path="test/SqlBound.Cli.UnitTests/SqlBound.Cli.UnitTests.csproj" />
     <Project Path="test/SqlBound.Generators.UnitTests/SqlBound.Generators.UnitTests.csproj" />
     <Project Path="test/SqlBound.IntegrationTests/SqlBound.IntegrationTests.csproj" />
+    <Project Path="test/SqlBound.Migrations.IntegrationTests/SqlBound.Migrations.IntegrationTests.csproj" />
+    <Project Path="test/SqlBound.Migrations.UnitTests/SqlBound.Migrations.UnitTests.csproj" />
     <Project Path="test/SqlBound.MySql.IntegrationTests/SqlBound.MySql.IntegrationTests.csproj" />
     <Project Path="test/SqlBound.MySql.UnitTests/SqlBound.MySql.UnitTests.csproj" />
     <Project Path="test/SqlBound.Npgsql.IntegrationTests/SqlBound.Npgsql.IntegrationTests.csproj" />
