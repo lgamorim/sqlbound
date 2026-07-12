@@ -40,6 +40,7 @@
     <PackageVersion>1.0.0-rc.1</PackageVersion>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>logo.png</PackageIcon>
     <PackageTags>sql;ado.net;dapper;source-generator;native-aot;sqlx;query;database;migrations</PackageTags>
     <PackageProjectUrl>https://github.com/lgamorim/sqlbound</PackageProjectUrl>
     <RepositoryUrl>https://github.com/lgamorim/sqlbound</RepositoryUrl>
@@ -50,9 +51,11 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
-  <!-- The shared NuGet README (packed as README.md, referenced by PackageReadmeFile above). -->
+  <!-- The shared NuGet README and icon (packed at the package root, referenced by the
+       PackageReadmeFile / PackageIcon properties above). -->
   <ItemGroup Condition="'$(IsPackable)' != 'false'">
     <None Include="$(MSBuildThisFileDirectory)docs\nuget\README.md" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)assets\logo.png" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
 
   <!--

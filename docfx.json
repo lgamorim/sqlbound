@@ -27,11 +27,15 @@
       { "files": [ "**.md", "**/toc.yml" ], "src": "docs", "dest": "docs", "exclude": [ "nuget/**" ] },
       { "files": [ "index.md", "toc.yml" ] }
     ],
+    "resource": [
+      { "files": [ "assets/logo.png" ] }
+    ],
     "output": "_site",
     "template": [ "default", "modern" ],
     "globalMetadata": {
       "_appName": "SqlBound",
       "_appTitle": "SqlBound",
+      "_appLogoPath": "assets/logo.png",
       "_description": "Compile-time verified SQL for .NET.",
       "_enableSearch": true,
       "_appFooter": "SqlBound — Apache-2.0",

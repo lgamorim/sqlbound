@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="SqlBound" width="280">
+</p>
+
 # SqlBound
 
 SqlBound is a .NET library providing [SQLx](https://github.com/launchbadge/sqlx)-equivalent

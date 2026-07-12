@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/lgamorim/sqlbound/master/assets/logo.png" alt="SqlBound" width="280">
+</p>
+
 # SqlBound
 
 **Compile-time verified SQL for .NET.** SqlBound checks your SQL against a real database schema at
