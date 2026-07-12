@@ -14,6 +14,7 @@ internal static class MigrateCommand
         {
             BuildAdd(),
             BuildRun(),
+            BuildRevert(),
         };
 
     private static Command BuildAdd()
@@ -97,6 +98,34 @@ internal static class MigrateCommand
             cancellationToken));
 
         return runCommand;
+    }
+
+    private static Command BuildRevert()
+    {
+        var migrationsOption = MigrationsOption();
+        var connectionOption = ConnectionOption();
+
+        var revertCommand = new Command("revert", "Revert the most recently applied migration.")
+        {
+            migrationsOption,
+            connectionOption,
+        };
+        revertCommand.SetAction((parseResult, cancellationToken) => MigrationCli.ExecuteAsync(
+            parseResult.GetValue(connectionOption),
+            ResolveDirectory(parseResult.GetValue(migrationsOption)),
+            async (connection, ledger, migrations) =>
+            {
+                var reverted = await MigrationRunner
+                    .RevertAsync(connection, ledger, migrations, cancellationToken)
+                    .ConfigureAwait(false);
+                Console.Out.WriteLine(reverted is null
+                    ? "nothing to revert."
+                    : $"reverted {reverted.Version}_{reverted.Name}.");
+                return 0;
+            },
+            cancellationToken));
+
+        return revertCommand;
     }
 
     private static Option<string?> MigrationsOption() =>

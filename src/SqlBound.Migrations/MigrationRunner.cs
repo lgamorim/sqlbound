@@ -43,6 +43,44 @@ public static class MigrationRunner
         return appliedNow;
     }
 
+    /// <summary>Reverts the most recently applied migration, running its down-script.</summary>
+    /// <param name="connection">An open connection to the target database.</param>
+    /// <param name="ledger">The migration ledger for the target provider.</param>
+    /// <param name="migrations">The migrations on disk, as loaded from the directory.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>The reverted migration, or <see langword="null"/> when nothing was applied.</returns>
+    /// <exception cref="MigrationInconsistencyException">The migration to revert is missing or irreversible.</exception>
+    /// <exception cref="MigrationExecutionException">The down-script failed to execute.</exception>
+    public static async Task<Migration?> RevertAsync(
+        DbConnection connection,
+        IMigrationLedger ledger,
+        IReadOnlyList<Migration> migrations,
+        CancellationToken cancellationToken)
+    {
+        await ledger.EnsureCreatedAsync(connection, cancellationToken).ConfigureAwait(false);
+        var applied = await ledger.GetAppliedAsync(connection, cancellationToken).ConfigureAwait(false);
+        var target = MigrationReverter.Plan(migrations, applied);
+        if (target is null)
+        {
+            return null;
+        }
+
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            // MigrationReverter.Plan guarantees a reversible target, so DownScript is non-null here.
+            await ExecuteScriptAsync(connection, transaction, target.DownScript!, cancellationToken).ConfigureAwait(false);
+            await ledger.RemoveAsync(connection, transaction, target.Version, cancellationToken).ConfigureAwait(false);
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            return target;
+        }
+        catch (DbException exception)
+        {
+            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+            throw new MigrationExecutionException(target.Version, target.Name, exception);
+        }
+    }
+
     private static async Task<AppliedMigration> ApplyAsync(
         DbConnection connection,
         IMigrationLedger ledger,
