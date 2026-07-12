@@ -53,6 +53,36 @@ public sealed class SqlServerMigrationLedger : IMigrationLedger
         return applied;
     }
 
+    /// <inheritdoc />
+    public async Task RecordAppliedAsync(
+        DbConnection connection, DbTransaction? transaction, AppliedMigration migration, CancellationToken cancellationToken)
+    {
+        await using var command = AsSqlConnection(connection).CreateCommand();
+        command.Transaction = (SqlTransaction?)transaction;
+        command.CommandText =
+            $"""
+            INSERT INTO dbo.{TableName} (version, name, checksum, applied_on_utc, execution_ms)
+            VALUES (@version, @name, @checksum, @appliedOnUtc, @executionMs);
+            """;
+        command.Parameters.AddWithValue("@version", migration.Version);
+        command.Parameters.AddWithValue("@name", migration.Name);
+        command.Parameters.AddWithValue("@checksum", migration.Checksum);
+        command.Parameters.AddWithValue("@appliedOnUtc", migration.AppliedOnUtc);
+        command.Parameters.AddWithValue("@executionMs", migration.ExecutionMs);
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task RemoveAsync(
+        DbConnection connection, DbTransaction? transaction, long version, CancellationToken cancellationToken)
+    {
+        await using var command = AsSqlConnection(connection).CreateCommand();
+        command.Transaction = (SqlTransaction?)transaction;
+        command.CommandText = $"DELETE FROM dbo.{TableName} WHERE version = @version;";
+        command.Parameters.AddWithValue("@version", version);
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     private static SqlConnection AsSqlConnection(DbConnection connection) =>
         connection as SqlConnection
         ?? throw new ArgumentException(
