@@ -4,6 +4,7 @@ using Microsoft.Data.SqlClient;
 using MySqlConnector;
 using Npgsql;
 using SqlBound.Migrations;
+using SqlBound.Sqlite;
 using SqlBound.SqlServer;
 
 namespace SqlBound.Cli;
@@ -27,12 +28,14 @@ internal static class ProviderServices
     public static IMigrationLedger Ledger(string provider) => provider switch
     {
         DatabaseProviders.SqlServer => new SqlServerMigrationLedger(),
+        DatabaseProviders.Sqlite => new SqliteMigrationLedger(),
         _ => throw Unsupported(provider),
     };
 
     public static IDatabaseAdmin DatabaseAdmin(string provider) => provider switch
     {
         DatabaseProviders.SqlServer => new SqlServerDatabaseAdmin(),
+        DatabaseProviders.Sqlite => new SqliteDatabaseAdmin(),
         _ => throw Unsupported(provider),
     };
 

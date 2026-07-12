@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SqlBound.Introspection\SqlBound.Introspection.csproj" />
+    <ProjectReference Include="..\SqlBound.Migrations\SqlBound.Migrations.csproj" />
   </ItemGroup>
 
   <ItemGroup>

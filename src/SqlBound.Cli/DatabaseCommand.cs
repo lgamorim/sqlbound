@@ -72,7 +72,7 @@ internal static class DatabaseCommand
             Console.Out.WriteLine(create ? $"database '{name}' is ready." : $"database '{name}' is dropped.");
             return 0;
         }
-        catch (Exception exception) when (exception is DbException or ArgumentException)
+        catch (Exception exception) when (exception is DbException or ArgumentException or IOException)
         {
             Console.Error.WriteLine($"error: {exception.Message}");
             return 1;
