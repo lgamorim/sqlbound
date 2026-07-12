@@ -47,8 +47,8 @@ SQL-file migrations, each reflecting what the underlying engine actually support
 
 ## Documentation
 
-Guides, provider matrix, and architecture decision records:
-https://github.com/lgamorim/sqlbound
+- Guides, provider matrix, and API reference: https://lgamorim.github.io/sqlbound/
+- Source, issues, and changelog: https://github.com/lgamorim/sqlbound
 
 ## License
 
