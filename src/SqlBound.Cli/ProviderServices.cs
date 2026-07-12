@@ -4,6 +4,7 @@ using Microsoft.Data.SqlClient;
 using MySqlConnector;
 using Npgsql;
 using SqlBound.Migrations;
+using SqlBound.MySql;
 using SqlBound.Npgsql;
 using SqlBound.Sqlite;
 using SqlBound.SqlServer;
@@ -31,6 +32,7 @@ internal static class ProviderServices
         DatabaseProviders.SqlServer => new SqlServerMigrationLedger(),
         DatabaseProviders.Sqlite => new SqliteMigrationLedger(),
         DatabaseProviders.Postgres => new NpgsqlMigrationLedger(),
+        DatabaseProviders.MySql => new MySqlMigrationLedger(),
         _ => throw Unsupported(provider),
     };
 
@@ -39,6 +41,7 @@ internal static class ProviderServices
         DatabaseProviders.SqlServer => new SqlServerDatabaseAdmin(),
         DatabaseProviders.Sqlite => new SqliteDatabaseAdmin(),
         DatabaseProviders.Postgres => new NpgsqlDatabaseAdmin(),
+        DatabaseProviders.MySql => new MySqlDatabaseAdmin(),
         _ => throw Unsupported(provider),
     };
 
