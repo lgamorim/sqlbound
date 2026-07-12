@@ -12,16 +12,14 @@ namespace SqlBound.Cli;
 /// </summary>
 internal static class SnapshotWriter
 {
-    public const string Provider = "sqlserver";
-
     public static string FileName(string commandText) => $"query-{SnapshotKey.Compute(commandText)}.json";
 
-    public static string Serialize(string commandText, QueryDescription description)
+    public static string Serialize(string commandText, QueryDescription description, string provider)
     {
         var builder = new StringBuilder();
         builder.Append("{\n");
         builder.Append($"  \"commandText\": {Quote(commandText)},\n");
-        builder.Append($"  \"provider\": {Quote(Provider)},\n");
+        builder.Append($"  \"provider\": {Quote(provider)},\n");
 
         if (description.Columns.Count == 0)
         {

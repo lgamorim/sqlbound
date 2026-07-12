@@ -1,5 +1,8 @@
+using System.Data.Common;
+using Microsoft.Data.Sqlite;
 using Microsoft.Data.SqlClient;
 using SqlBound.Introspection;
+using SqlBound.Sqlite;
 using SqlBound.SqlServer;
 
 namespace SqlBound.Cli;
@@ -16,10 +19,10 @@ internal static class PrepareRunner
     public static async Task<int> RunAsync(
         string projectDirectory, string databaseValue, bool check, TextWriter output, CancellationToken cancellationToken)
     {
-        string connectionString;
+        DatabaseTarget target;
         try
         {
-            connectionString = DatabaseUrl.ToConnectionString(databaseValue);
+            target = DatabaseUrl.Resolve(databaseValue);
         }
         catch (ArgumentException exception)
         {
@@ -33,20 +36,20 @@ internal static class PrepareRunner
             output.WriteLine($"warning: {warning}");
         }
 
-        var connection = new SqlConnection(connectionString);
+        var connection = CreateConnection(target);
         await using (connection.ConfigureAwait(false))
         {
             try
             {
                 await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception exception) when (exception is SqlException or InvalidOperationException)
+            catch (Exception exception) when (exception is SqlException or SqliteException or InvalidOperationException)
             {
                 output.WriteLine($"error: cannot connect to the database: {exception.Message}");
                 return 1;
             }
 
-            IQueryDescriber describer = new SqlServerQueryDescriber();
+            var describer = CreateDescriber(target);
             var desired = new Dictionary<string, string>();
             var failures = 0;
             foreach (var group in discovery.Queries.GroupBy(query => query.CommandText, StringComparer.Ordinal))
@@ -57,7 +60,8 @@ internal static class PrepareRunner
                     var description = await describer
                         .DescribeAsync(connection, group.Key, cancellationToken)
                         .ConfigureAwait(false);
-                    desired[SnapshotWriter.FileName(group.Key)] = SnapshotWriter.Serialize(group.Key, description);
+                    desired[SnapshotWriter.FileName(group.Key)] =
+                        SnapshotWriter.Serialize(group.Key, description, target.Provider);
                 }
                 catch (SqlBoundDescribeException exception)
                 {
@@ -108,4 +112,16 @@ internal static class PrepareRunner
             return 0;
         }
     }
+
+    private static DbConnection CreateConnection(DatabaseTarget target) => target.Provider switch
+    {
+        DatabaseProviders.Sqlite => new SqliteConnection(target.ConnectionString),
+        _ => new SqlConnection(target.ConnectionString),
+    };
+
+    private static IQueryDescriber CreateDescriber(DatabaseTarget target) => target.Provider switch
+    {
+        DatabaseProviders.Sqlite => new SqliteQueryDescriber(),
+        _ => new SqlServerQueryDescriber(),
+    };
 }

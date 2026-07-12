@@ -1,26 +1,53 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.Data.SqlClient;
 
 namespace SqlBound.Cli;
 
+/// <summary>A resolved database target: which provider to describe against, and the ADO.NET connection string to use.</summary>
+internal readonly record struct DatabaseTarget(string Provider, string ConnectionString);
+
 /// <summary>
-/// Resolves the value of <c>SQLBOUND_DATABASE_URL</c> (or <c>--connection</c>) into an ADO.NET
-/// connection string. Accepts either a raw connection string, passed through verbatim, or a
-/// CI-friendly URL of the form <c>sqlserver://user:pass@host:port/database?Option=value</c>.
+/// Resolves the value of <c>SQLBOUND_DATABASE_URL</c> (or <c>--connection</c>) into a
+/// <see cref="DatabaseTarget"/>. Accepts a <c>sqlserver://</c> or <c>sqlite://</c> URL, or - for
+/// backward compatibility with SQL Server's original single-provider convention - a raw ADO.NET
+/// connection string passed through verbatim as SQL Server.
 /// </summary>
 internal static class DatabaseUrl
 {
     public const string EnvironmentVariable = "SQLBOUND_DATABASE_URL";
 
-    private const string UrlScheme = "sqlserver://";
+    private const string SqlServerScheme = "sqlserver://";
+    private const string SqliteScheme = "sqlite://";
 
-    public static string ToConnectionString(string value)
+    public static DatabaseTarget Resolve(string value)
     {
-        if (!value.StartsWith(UrlScheme, StringComparison.OrdinalIgnoreCase))
+        if (value.StartsWith(SqliteScheme, StringComparison.OrdinalIgnoreCase))
         {
-            ValidateConnectionString(value);
-            return value;
+            return new DatabaseTarget(DatabaseProviders.Sqlite, ToSqliteConnectionString(value));
         }
 
+        if (!value.StartsWith(SqlServerScheme, StringComparison.OrdinalIgnoreCase))
+        {
+            ValidateSqlServerConnectionString(value);
+            return new DatabaseTarget(DatabaseProviders.SqlServer, value);
+        }
+
+        return new DatabaseTarget(DatabaseProviders.SqlServer, ToSqlServerConnectionString(value));
+    }
+
+    private static string ToSqliteConnectionString(string value)
+    {
+        var path = value.Substring(SqliteScheme.Length);
+        if (path.Length == 0)
+        {
+            throw new ArgumentException($"'{value}' is not a valid sqlite:// URL: no path given.");
+        }
+
+        return new SqliteConnectionStringBuilder { DataSource = path }.ConnectionString;
+    }
+
+    private static string ToSqlServerConnectionString(string value)
+    {
         if (!Uri.TryCreate(value, UriKind.Absolute, out var url) || url.Host.Length == 0)
         {
             throw new ArgumentException($"'{value}' is not a valid sqlserver:// URL.");
@@ -69,7 +96,7 @@ internal static class DatabaseUrl
         return builder.ConnectionString;
     }
 
-    private static void ValidateConnectionString(string value)
+    private static void ValidateSqlServerConnectionString(string value)
     {
         try
         {

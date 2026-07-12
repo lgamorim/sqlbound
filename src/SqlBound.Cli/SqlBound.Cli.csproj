@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SqlBound.Introspection\SqlBound.Introspection.csproj" />
+    <ProjectReference Include="..\SqlBound.Sqlite\SqlBound.Sqlite.csproj" />
     <ProjectReference Include="..\SqlBound.SqlServer\SqlBound.SqlServer.csproj" />
   </ItemGroup>
 
