@@ -1,7 +1,9 @@
 using System.Data.Common;
 using Microsoft.Data.Sqlite;
 using Microsoft.Data.SqlClient;
+using Npgsql;
 using SqlBound.Introspection;
+using SqlBound.Npgsql;
 using SqlBound.Sqlite;
 using SqlBound.SqlServer;
 
@@ -43,7 +45,7 @@ internal static class PrepareRunner
             {
                 await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception exception) when (exception is SqlException or SqliteException or InvalidOperationException)
+            catch (Exception exception) when (exception is SqlException or SqliteException or NpgsqlException or InvalidOperationException)
             {
                 output.WriteLine($"error: cannot connect to the database: {exception.Message}");
                 return 1;
@@ -116,12 +118,14 @@ internal static class PrepareRunner
     private static DbConnection CreateConnection(DatabaseTarget target) => target.Provider switch
     {
         DatabaseProviders.Sqlite => new SqliteConnection(target.ConnectionString),
+        DatabaseProviders.Postgres => new NpgsqlConnection(target.ConnectionString),
         _ => new SqlConnection(target.ConnectionString),
     };
 
     private static IQueryDescriber CreateDescriber(DatabaseTarget target) => target.Provider switch
     {
         DatabaseProviders.Sqlite => new SqliteQueryDescriber(),
+        DatabaseProviders.Postgres => new NpgsqlQueryDescriber(),
         _ => new SqlServerQueryDescriber(),
     };
 }

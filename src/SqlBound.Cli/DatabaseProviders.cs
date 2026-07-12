@@ -5,4 +5,5 @@ internal static class DatabaseProviders
 {
     public const string SqlServer = "sqlserver";
     public const string Sqlite = "sqlite";
+    public const string Postgres = "postgres";
 }
