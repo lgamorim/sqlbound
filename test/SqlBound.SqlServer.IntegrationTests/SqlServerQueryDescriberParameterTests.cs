@@ -1,3 +1,5 @@
+using SqlBound.Introspection;
+
 namespace SqlBound.SqlServer.IntegrationTests;
 
 public sealed class SqlServerQueryDescriberParameterTests(SqlServerFixture fixture)
@@ -7,7 +9,7 @@ public sealed class SqlServerQueryDescriberParameterTests(SqlServerFixture fixtu
     {
         await using var connection = await fixture.OpenConnectionAsync();
 
-        var description = await SqlServerQueryDescriber.DescribeAsync(
+        var description = await new SqlServerQueryDescriber().DescribeAsync(
             connection,
             "SELECT Id FROM dbo.Items WHERE Id = @id AND Name = @name AND Price > @minPrice",
             TestContext.Current.CancellationToken);
@@ -28,7 +30,7 @@ public sealed class SqlServerQueryDescriberParameterTests(SqlServerFixture fixtu
     {
         await using var connection = await fixture.OpenConnectionAsync();
 
-        var description = await SqlServerQueryDescriber.DescribeAsync(
+        var description = await new SqlServerQueryDescriber().DescribeAsync(
             connection, "DELETE FROM dbo.Items WHERE Id = @id", TestContext.Current.CancellationToken);
 
         Assert.Empty(description.Columns);
@@ -41,7 +43,7 @@ public sealed class SqlServerQueryDescriberParameterTests(SqlServerFixture fixtu
     {
         await using var connection = await fixture.OpenConnectionAsync();
 
-        var description = await SqlServerQueryDescriber.DescribeAsync(
+        var description = await new SqlServerQueryDescriber().DescribeAsync(
             connection, "SELECT Id FROM dbo.Items", TestContext.Current.CancellationToken);
 
         Assert.Empty(description.Parameters);
@@ -54,7 +56,7 @@ public sealed class SqlServerQueryDescriberParameterTests(SqlServerFixture fixtu
         const string commandText = "SELECT IntCol FROM dbo.EveryType WHERE DateTimeOffsetCol = @moment";
 
         var exception = await Assert.ThrowsAsync<SqlBoundDescribeException>(
-            () => SqlServerQueryDescriber.DescribeAsync(
+            () => new SqlServerQueryDescriber().DescribeAsync(
                 connection, commandText, TestContext.Current.CancellationToken));
 
         Assert.Contains("datetimeoffset", exception.Message);

@@ -1,3 +1,5 @@
+using SqlBound.Introspection;
+
 namespace SqlBound.SqlServer.IntegrationTests;
 
 public sealed class SqlServerQueryDescriberColumnTests(SqlServerFixture fixture)
@@ -7,7 +9,7 @@ public sealed class SqlServerQueryDescriberColumnTests(SqlServerFixture fixture)
     {
         await using var connection = await fixture.OpenConnectionAsync();
 
-        var description = await SqlServerQueryDescriber.DescribeAsync(
+        var description = await new SqlServerQueryDescriber().DescribeAsync(
             connection, "SELECT Id, Name, Price FROM dbo.Items", TestContext.Current.CancellationToken);
 
         Assert.Equal(
@@ -24,7 +26,7 @@ public sealed class SqlServerQueryDescriberColumnTests(SqlServerFixture fixture)
     {
         await using var connection = await fixture.OpenConnectionAsync();
 
-        var description = await SqlServerQueryDescriber.DescribeAsync(
+        var description = await new SqlServerQueryDescriber().DescribeAsync(
             connection,
             """
             SELECT BitCol, TinyIntCol, SmallIntCol, IntCol, BigIntCol, RealCol, FloatCol,
@@ -55,7 +57,7 @@ public sealed class SqlServerQueryDescriberColumnTests(SqlServerFixture fixture)
     {
         await using var connection = await fixture.OpenConnectionAsync();
 
-        var description = await SqlServerQueryDescriber.DescribeAsync(
+        var description = await new SqlServerQueryDescriber().DescribeAsync(
             connection, "DELETE FROM dbo.Items WHERE Id = 0", TestContext.Current.CancellationToken);
 
         Assert.Empty(description.Columns);
@@ -66,7 +68,7 @@ public sealed class SqlServerQueryDescriberColumnTests(SqlServerFixture fixture)
     {
         await using var connection = await fixture.OpenConnectionAsync();
 
-        var description = await SqlServerQueryDescriber.DescribeAsync(
+        var description = await new SqlServerQueryDescriber().DescribeAsync(
             connection, "SELECT COUNT(*) FROM dbo.Items", TestContext.Current.CancellationToken);
 
         var column = Assert.Single(description.Columns);
@@ -83,7 +85,7 @@ public sealed class SqlServerQueryDescriberColumnTests(SqlServerFixture fixture)
         await using var connection = await fixture.OpenConnectionAsync();
 
         var exception = await Assert.ThrowsAsync<SqlBoundDescribeException>(
-            () => SqlServerQueryDescriber.DescribeAsync(
+            () => new SqlServerQueryDescriber().DescribeAsync(
                 connection, commandText, TestContext.Current.CancellationToken));
 
         Assert.Contains(sqlTypeName, exception.Message);
@@ -96,7 +98,7 @@ public sealed class SqlServerQueryDescriberColumnTests(SqlServerFixture fixture)
         await using var connection = await fixture.OpenConnectionAsync();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => SqlServerQueryDescriber.DescribeAsync(
+            () => new SqlServerQueryDescriber().DescribeAsync(
                 connection, "SELECT Id FROM dbo.Items", new CancellationToken(canceled: true)));
     }
 }

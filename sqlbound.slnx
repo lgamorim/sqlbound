@@ -5,6 +5,7 @@
   <Folder Name="/src/">
     <Project Path="src/SqlBound.Cli/SqlBound.Cli.csproj" />
     <Project Path="src/SqlBound.Generators/SqlBound.Generators.csproj" />
+    <Project Path="src/SqlBound.Introspection/SqlBound.Introspection.csproj" />
     <Project Path="src/SqlBound.SqlServer/SqlBound.SqlServer.csproj" />
     <Project Path="src/SqlBound/SqlBound.csproj" />
   </Folder>

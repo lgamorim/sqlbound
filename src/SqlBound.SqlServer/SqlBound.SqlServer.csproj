@@ -9,6 +9,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SqlBound.Introspection\SqlBound.Introspection.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="SqlBound.SqlServer.UnitTests" />
   </ItemGroup>
 

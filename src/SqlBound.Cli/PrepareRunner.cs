@@ -1,4 +1,5 @@
 using Microsoft.Data.SqlClient;
+using SqlBound.Introspection;
 using SqlBound.SqlServer;
 
 namespace SqlBound.Cli;
@@ -45,6 +46,7 @@ internal static class PrepareRunner
                 return 1;
             }
 
+            IQueryDescriber describer = new SqlServerQueryDescriber();
             var desired = new Dictionary<string, string>();
             var failures = 0;
             foreach (var group in discovery.Queries.GroupBy(query => query.CommandText, StringComparer.Ordinal))
@@ -52,7 +54,7 @@ internal static class PrepareRunner
                 var methods = string.Join(", ", group.Select(query => query.MethodName).Distinct());
                 try
                 {
-                    var description = await SqlServerQueryDescriber
+                    var description = await describer
                         .DescribeAsync(connection, group.Key, cancellationToken)
                         .ConfigureAwait(false);
                     desired[SnapshotWriter.FileName(group.Key)] = SnapshotWriter.Serialize(group.Key, description);

@@ -1,5 +1,5 @@
 using System.Text;
-using SqlBound.SqlServer;
+using SqlBound.Introspection;
 
 namespace SqlBound.Cli;
 
