@@ -430,3 +430,7 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 .idea/
+
+# DocFX documentation site (generated)
+_site/
+api/
