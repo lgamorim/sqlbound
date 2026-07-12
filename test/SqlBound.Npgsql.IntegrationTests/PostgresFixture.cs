@@ -61,6 +61,13 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     public async Task<NpgsqlConnection> OpenConnectionAsync()
     {
+        var connection = new NpgsqlConnection(GetConnectionString());
+        await connection.OpenAsync();
+        return connection;
+    }
+
+    public string GetConnectionString()
+    {
         if (_startupFailure is not null)
         {
             if (Environment.GetEnvironmentVariable("CI") is "true" or "1")
@@ -72,8 +79,6 @@ public sealed class PostgresFixture : IAsyncLifetime
             Assert.Skip($"Postgres container unavailable (is Docker running?): {_startupFailure.Message}");
         }
 
-        var connection = new NpgsqlConnection(_container.GetConnectionString());
-        await connection.OpenAsync();
-        return connection;
+        return _container.GetConnectionString();
     }
 }

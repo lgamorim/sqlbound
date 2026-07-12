@@ -62,6 +62,13 @@ public sealed class MySqlFixture : IAsyncLifetime
 
     public async Task<MySqlConnection> OpenConnectionAsync()
     {
+        var connection = new MySqlConnection(GetConnectionString());
+        await connection.OpenAsync();
+        return connection;
+    }
+
+    public string GetConnectionString()
+    {
         if (_startupFailure is not null)
         {
             if (Environment.GetEnvironmentVariable("CI") is "true" or "1")
@@ -73,8 +80,6 @@ public sealed class MySqlFixture : IAsyncLifetime
             Assert.Skip($"MySQL container unavailable (is Docker running?): {_startupFailure.Message}");
         }
 
-        var connection = new MySqlConnection(_container.GetConnectionString());
-        await connection.OpenAsync();
-        return connection;
+        return _container.GetConnectionString();
     }
 }

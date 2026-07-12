@@ -10,6 +10,14 @@ namespace SqlBound.Migrations;
 /// </summary>
 public interface IMigrationLedger
 {
+    /// <summary>
+    /// Whether the provider applies schema changes within a transaction. When <see langword="false"/>,
+    /// <c>migrate run</c> applies each migration without wrapping it in a transaction, because the
+    /// provider commits DDL implicitly (as MySQL does) — so a mid-migration failure cannot be
+    /// rolled back. <see langword="true"/> for SQL Server, PostgreSQL, and SQLite.
+    /// </summary>
+    bool SupportsTransactionalDdl { get; }
+
     /// <summary>Creates the ledger table if it does not already exist. Idempotent.</summary>
     /// <param name="connection">An open connection to the target database.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>

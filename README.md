@@ -2,11 +2,12 @@
 
 SqlBound is a .NET library providing [SQLx](https://github.com/launchbadge/sqlx)-equivalent
 functionality for C#: SQL queries verified at compile time against a real database schema,
-reflection-free row materialization via a Roslyn incremental source generator, and clean
-coexistence with [Dapper](https://github.com/DapperLib/Dapper) in the same project.
+reflection-free row materialization via a Roslyn incremental source generator, SQL-file
+migrations, and clean coexistence with [Dapper](https://github.com/DapperLib/Dapper) in the same
+project.
 
-Status: **v0.3.0** — Phases 1–3 (Bedrock, Codegen, Verification) are complete. Phases 4–6
-(Providers, Migrations & CLI, Ship) are still ahead; see [Roadmap](#roadmap).
+Status: **v0.5.0** — Phases 1–5 (Bedrock, Codegen, Verification, Providers, Migrations & CLI) are
+complete. Phase 6 (Ship — API freeze and the 1.0 release) is still ahead; see [Roadmap](#roadmap).
 
 ## Why
 
@@ -63,16 +64,40 @@ An opt-in, two-stage pipeline (mirroring SQLx's own offline `.sqlx` mode):
 Projects that never run `prepare` never see a verification diagnostic (opt-in by snapshot
 presence). See [docs/verification.md](docs/verification.md), [docs/diagnostics.md](docs/diagnostics.md),
 and [docs/introspection.md](docs/introspection.md) for the full workflow, the diagnostic catalog,
-and how SQL Server introspection works today.
+and what each provider can and cannot describe.
 
 ## Migrations
 
 Schema changes are ordered SQL-file migrations — paired `{version}_{name}.up.sql` / `.down.sql`
-files with a timestamp version — tracked in a `_sqlbound_migrations` ledger. `migrate add` scaffolds
-a migration, `migrate run` applies pending ones (each in its own transaction, refusing on checksum
-drift or out-of-order files), `migrate revert` rolls the last one back, and `migrate status` reports
-what is applied vs pending. `database create`/`drop` manage the target database. SQL Server today;
-other providers in M15. See [docs/migrations.md](docs/migrations.md).
+files with a timestamp version (the down file optional per migration) — tracked in a
+`_sqlbound_migrations` ledger that checksums each applied script. The `sqlbound` tool drives the
+whole lifecycle:
+
+```bash
+dotnet sqlbound migrate add "create items"   # scaffold a timestamped up/down pair
+dotnet sqlbound migrate run                   # apply every pending migration, in order
+dotnet sqlbound migrate status                # applied / pending / drifted / missing
+dotnet sqlbound migrate revert                # roll back the most recent migration
+dotnet sqlbound database create               # create or drop the target database
+```
+
+`migrate run` applies each migration in its own transaction (where the provider supports it),
+refusing to proceed on checksum drift or an out-of-order migration. See
+[docs/migrations.md](docs/migrations.md) for the file format, the ledger, and per-provider
+behaviour. Design decisions are in [ADR 0006](docs/adr/0006-migration-file-format.md) and
+[ADR 0007](docs/adr/0007-mysql-migrations-not-transactional.md).
+
+## Providers
+
+SQL Server is the pilot; SQLite, PostgreSQL, and MySQL followed. The provider is selected from the
+`SQLBOUND_DATABASE_URL` scheme (`sqlserver://`, `sqlite://`, `postgresql://`, `mysql://`).
+
+| Provider | Verification (`prepare`) | Migrations & `database` | Notes |
+| --- | --- | --- | --- |
+| SQL Server | Full (columns + parameters) | Yes, transactional | Pilot provider |
+| PostgreSQL | Full (columns + parameters) | Yes, transactional | |
+| SQLite | Columns only; computed columns rejected ([ADR 0005](docs/adr/0005-sqlite-describe-scope.md)) | Yes, transactional | The `Data Source` file is the database |
+| MySQL | Columns only; no parameter typing | Yes, **not** transactional ([ADR 0007](docs/adr/0007-mysql-migrations-not-transactional.md)) | DDL auto-commits |
 
 ## Packages
 
@@ -80,9 +105,10 @@ other providers in M15. See [docs/migrations.md](docs/migrations.md).
 |---|---|
 | `SqlBound` | Runtime core — attributes, `SqlSession`, dependency-free. |
 | `SqlBound.Generators` | The incremental source generator and the verification analyzer. Packed as an analyzer, never a runtime dependency. |
-| `SqlBound.SqlServer` / `.Sqlite` / `.Npgsql` / `.MySql` | Per-provider introspection and SQL-to-CLR type mapping. SQL Server is the pilot; SQLite, Postgres, and MySQL shipped in Phase 4. |
-| `SqlBound.Migrations` | Provider-neutral SQL-file migration model and the `IMigrationLedger` history contract. |
-| `SqlBound.Cli` | The `sqlbound` dotnet tool — `prepare`, `migrate add`, and `database create`/`drop`. |
+| `SqlBound.Introspection` | Provider-neutral introspection contracts (`IQueryDescriber`). |
+| `SqlBound.Migrations` | Provider-neutral migration model, the `IMigrationLedger` history contract, and `IDatabaseAdmin`. |
+| `SqlBound.SqlServer` / `.Sqlite` / `.Npgsql` / `.MySql` | Per-provider introspection, type mapping, migration ledger, and database administration. |
+| `SqlBound.Cli` | The `sqlbound` dotnet tool — `prepare`, `migrate add`/`run`/`revert`/`status`, and `database create`/`drop`. |
 
 ## Design decisions
 
@@ -94,6 +120,7 @@ Architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/):
 - [0004](docs/adr/0004-prepare-is-cli-only.md) — `prepare` stays a CLI step; an MSBuild task is deferred
 - [0005](docs/adr/0005-sqlite-describe-scope.md) — SQLite describe stays dry-run-only; computed columns and parameter types are out of scope
 - [0006](docs/adr/0006-migration-file-format.md) — migrations are paired up/down SQL files with a timestamp version and a checksummed ledger
+- [0007](docs/adr/0007-mysql-migrations-not-transactional.md) — MySQL migrations are not transactional, because MySQL commits DDL implicitly
 
 ## Performance
 
@@ -116,8 +143,8 @@ minor version:
 | 2 — Codegen | M4–M6 | Done (`v0.2.0`) |
 | 3 — Verification | M7–M9 | Done (`v0.3.0`) |
 | 4 — Providers | M10–M12 | Done (`v0.4.0`) |
-| 5 — Migrations & CLI | M13– | In progress |
-| 6 — Ship | — | Planned (`v1.0.0`) |
+| 5 — Migrations & CLI | M13–M15 | Done (`v0.5.0`) |
+| 6 — Ship | M16 | Planned (`v1.0.0`) |
 
 ## License
 

@@ -1,15 +1,13 @@
 using System.Data.Common;
-using Microsoft.Data.SqlClient;
 using SqlBound.Migrations;
-using SqlBound.SqlServer;
 
 namespace SqlBound.Cli;
 
 /// <summary>
 /// Shared plumbing for the connected <c>migrate</c> subcommands (<c>run</c>, <c>revert</c>,
 /// <c>status</c>): resolve the target, load the migrations directory, open the connection, build the
-/// SQL Server ledger, and invoke the command's action — translating every expected failure into an
-/// error message and a non-zero exit code. SQL Server only in this release.
+/// provider's ledger, and invoke the command's action — translating every expected failure into an
+/// error message and a non-zero exit code.
 /// </summary>
 internal static class MigrationCli
 {
@@ -27,19 +25,15 @@ internal static class MigrationCli
         }
 
         DatabaseTarget target;
+        IMigrationLedger ledger;
         try
         {
             target = DatabaseUrl.Resolve(databaseValue);
+            ledger = ProviderServices.Ledger(target.Provider);
         }
-        catch (ArgumentException exception)
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException)
         {
             Console.Error.WriteLine($"error: {exception.Message}");
-            return 1;
-        }
-
-        if (target.Provider != DatabaseProviders.SqlServer)
-        {
-            Console.Error.WriteLine("error: 'migrate' currently supports SQL Server only.");
             return 1;
         }
 
@@ -54,14 +48,14 @@ internal static class MigrationCli
             return 1;
         }
 
-        var connection = new SqlConnection(target.ConnectionString);
+        var connection = ProviderServices.CreateConnection(target);
         await using (connection.ConfigureAwait(false))
         {
             try
             {
                 await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception exception) when (exception is SqlException or InvalidOperationException)
+            catch (Exception exception) when (exception is DbException or InvalidOperationException)
             {
                 Console.Error.WriteLine($"error: cannot connect to the database: {exception.Message}");
                 return 1;
@@ -69,7 +63,7 @@ internal static class MigrationCli
 
             try
             {
-                return await action(connection, new SqlServerMigrationLedger(), migrations).ConfigureAwait(false);
+                return await action(connection, ledger, migrations).ConfigureAwait(false);
             }
             catch (Exception exception)
                 when (exception is MigrationInconsistencyException or MigrationExecutionException or DbException)

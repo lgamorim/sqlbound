@@ -2,11 +2,12 @@
 
 SqlBound applies schema changes as ordered SQL-file migrations, tracked in a database-side ledger.
 This document covers the on-disk format, the ledger, and the CLI commands. The format decisions are
-recorded in [ADR 0006](adr/0006-migration-file-format.md).
+recorded in [ADR 0006](adr/0006-migration-file-format.md); the MySQL transactional caveat in
+[ADR 0007](adr/0007-mysql-migrations-not-transactional.md).
 
-> **Status.** The full command set — `migrate add`, `migrate run`, `migrate revert`, `migrate
-> status`, and `database create`/`database drop` — works against **SQL Server**. The other providers
-> follow in M15.
+The full command set — `migrate add`, `migrate run`, `migrate revert`, `migrate status`, and
+`database create`/`database drop` — works against **SQL Server, SQLite, PostgreSQL, and MySQL**.
+The provider is chosen from the connection URL's scheme (see [verification.md](verification.md)).
 
 ## File format
 
@@ -79,8 +80,10 @@ dotnet sqlbound migrate run
 # applied 1 migration(s).
 ```
 
-- Each migration's up-script and its ledger row commit in **one transaction**. If a script fails,
-  that migration is rolled back and the run stops; every earlier migration stays applied.
+- On SQL Server, PostgreSQL, and SQLite, each migration's up-script and its ledger row commit in
+  **one transaction**: if a script fails, that migration is rolled back and the run stops, while
+  every earlier migration stays applied. On **MySQL** there is no such rollback — see the matrix
+  below and [ADR 0007](adr/0007-mysql-migrations-not-transactional.md).
 - `run` refuses to proceed on two inconsistencies: an already-applied migration whose up-script has
   been **edited** (checksum drift), and a **pending migration ordered before** one already applied
   (a late-merged branch). Fix the directory rather than the database.
@@ -89,6 +92,15 @@ dotnet sqlbound migrate run
 > **Batch separators.** Each script runs as a single command; SQL Server's `GO` separator is **not**
 > supported, so a migration needing multiple batches (e.g. `CREATE PROCEDURE` followed by more SQL)
 > must be split into separate migrations. This may be revisited in a later release.
+
+#### Per-provider behaviour
+
+| Provider | Migrations transactional? | `database create` / `drop` |
+| --- | --- | --- |
+| SQL Server | Yes | Connects to `master`; `QUOTENAME`-quoted; force-drops open connections |
+| PostgreSQL | Yes | Connects to `postgres`; drops with `WITH (FORCE)` |
+| SQLite | Yes | The `Data Source` file *is* the database: create materializes it, drop deletes it |
+| MySQL | **No** — DDL auto-commits, so a failed migration is not rolled back ([ADR 0007](adr/0007-mysql-migrations-not-transactional.md)) | `CREATE`/`DROP DATABASE IF (NOT) EXISTS` from a no-default-database connection |
 
 ### `migrate revert`
 
@@ -119,8 +131,8 @@ dotnet sqlbound migrate status
 
 ### `database create` / `database drop`
 
-Create or drop the database named by the connection string's `Initial Catalog`, connecting to
-`master` to do so:
+Create or drop the database named by the connection string, connecting to the provider's
+maintenance database (or, for SQLite, acting on the file) to do so:
 
 ```bash
 export SQLBOUND_DATABASE_URL="sqlserver://sa:password@localhost:1433/myapp?TrustServerCertificate=true"
@@ -130,8 +142,9 @@ dotnet sqlbound database drop      # database 'myapp' is dropped.
 
 - `--connection` overrides `SQLBOUND_DATABASE_URL`.
 - Both are idempotent: `create` does nothing if the database exists, `drop` does nothing if it does
-  not. `drop` forces out open connections before dropping.
-- The target name is bracketed with `QUOTENAME` server-side, so it can never be interpreted as SQL.
-- Both refuse a connection string that names no database or names a system database
-  (`master`, `model`, `msdb`, `tempdb`).
-- **SQL Server only in this release.** The other providers follow in M15.
+  not. The server providers force out open connections before dropping.
+- Identifiers are quoted for the provider, so a database name can never be interpreted as SQL.
+- All providers refuse a connection string that names no database or names a system database. The
+  per-provider mechanics are in the matrix above.
+- `create`/`drop` are administrative operations: the connection must have the privilege to create
+  databases (e.g. a privileged/`root` user on the server providers).
