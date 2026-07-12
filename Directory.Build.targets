@@ -1,0 +1,20 @@
+<Project>
+
+  <!--
+    Public-API surface tracking. Opted into per project with <TrackPublicApi>true</TrackPublicApi>
+    (set only on the shipping library packages — not tests, the CLI tool, or the Roslyn component,
+    whose surfaces are the command line and the SQLB### diagnostics respectively). Wired here in
+    .targets rather than .props so it is evaluated after each project body has set its own flags.
+
+    The analyzer fails the build (RS0016/RS0017 under TreatWarningsAsErrors) if the public surface
+    drifts from the committed baseline, making the post-1.0 SemVer commitment tool-enforced. Until
+    1.0.0 actually ships, the whole surface lives in PublicAPI.Unshipped.txt; the GA promotion moves
+    it to PublicAPI.Shipped.txt.
+  -->
+  <ItemGroup Condition="'$(TrackPublicApi)' == 'true'">
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" PrivateAssets="all" />
+    <AdditionalFiles Include="$(MSBuildProjectDirectory)\PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="$(MSBuildProjectDirectory)\PublicAPI.Unshipped.txt" />
+  </ItemGroup>
+
+</Project>

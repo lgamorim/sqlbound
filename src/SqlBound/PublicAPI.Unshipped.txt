@@ -1,0 +1,16 @@
+#nullable enable
+SqlBound.SqlExecuteAttribute
+SqlBound.SqlExecuteAttribute.CommandText.get -> string!
+SqlBound.SqlExecuteAttribute.SqlExecuteAttribute(string! commandText) -> void
+SqlBound.SqlParameters
+SqlBound.SqlParameters.Count.get -> int
+SqlBound.SqlParameters.Items.get -> System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string!, object!>>!
+SqlBound.SqlParameters.SqlParameters(params (string! Name, object? Value)[]! parameters) -> void
+SqlBound.SqlQueryAttribute
+SqlBound.SqlQueryAttribute.CommandText.get -> string!
+SqlBound.SqlQueryAttribute.SqlQueryAttribute(string! commandText) -> void
+SqlBound.SqlSession
+SqlBound.SqlSession.FetchScalarAsync<T>(string! sql, SqlBound.SqlParameters? parameters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T?>!
+SqlBound.SqlSession.RunAsync(string! sql, SqlBound.SqlParameters? parameters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+SqlBound.SqlSession.SqlSession(System.Data.Common.DbConnection! connection, System.Data.Common.DbTransaction? transaction = null) -> void
+static SqlBound.SqlParameters.Empty.get -> SqlBound.SqlParameters!

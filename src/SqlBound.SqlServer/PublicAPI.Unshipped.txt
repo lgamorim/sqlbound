@@ -1,0 +1,15 @@
+#nullable enable
+SqlBound.SqlServer.SqlServerDatabaseAdmin
+SqlBound.SqlServer.SqlServerDatabaseAdmin.CreateAsync(string! connectionString, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string!>!
+SqlBound.SqlServer.SqlServerDatabaseAdmin.DropAsync(string! connectionString, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string!>!
+SqlBound.SqlServer.SqlServerDatabaseAdmin.SqlServerDatabaseAdmin() -> void
+SqlBound.SqlServer.SqlServerMigrationLedger
+SqlBound.SqlServer.SqlServerMigrationLedger.EnsureCreatedAsync(System.Data.Common.DbConnection! connection, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SqlBound.SqlServer.SqlServerMigrationLedger.GetAppliedAsync(System.Data.Common.DbConnection! connection, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.AppliedMigration!>!>!
+SqlBound.SqlServer.SqlServerMigrationLedger.RecordAppliedAsync(System.Data.Common.DbConnection! connection, System.Data.Common.DbTransaction? transaction, SqlBound.Migrations.AppliedMigration! migration, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SqlBound.SqlServer.SqlServerMigrationLedger.RemoveAsync(System.Data.Common.DbConnection! connection, System.Data.Common.DbTransaction? transaction, long version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SqlBound.SqlServer.SqlServerMigrationLedger.SqlServerMigrationLedger() -> void
+SqlBound.SqlServer.SqlServerMigrationLedger.SupportsTransactionalDdl.get -> bool
+SqlBound.SqlServer.SqlServerQueryDescriber
+SqlBound.SqlServer.SqlServerQueryDescriber.DescribeAsync(System.Data.Common.DbConnection! connection, string! commandText, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<SqlBound.Introspection.QueryDescription!>!
+SqlBound.SqlServer.SqlServerQueryDescriber.SqlServerQueryDescriber() -> void

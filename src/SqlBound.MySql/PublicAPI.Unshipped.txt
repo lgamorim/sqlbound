@@ -1,0 +1,15 @@
+#nullable enable
+SqlBound.MySql.MySqlDatabaseAdmin
+SqlBound.MySql.MySqlDatabaseAdmin.CreateAsync(string! connectionString, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string!>!
+SqlBound.MySql.MySqlDatabaseAdmin.DropAsync(string! connectionString, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string!>!
+SqlBound.MySql.MySqlDatabaseAdmin.MySqlDatabaseAdmin() -> void
+SqlBound.MySql.MySqlMigrationLedger
+SqlBound.MySql.MySqlMigrationLedger.EnsureCreatedAsync(System.Data.Common.DbConnection! connection, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SqlBound.MySql.MySqlMigrationLedger.GetAppliedAsync(System.Data.Common.DbConnection! connection, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.AppliedMigration!>!>!
+SqlBound.MySql.MySqlMigrationLedger.MySqlMigrationLedger() -> void
+SqlBound.MySql.MySqlMigrationLedger.RecordAppliedAsync(System.Data.Common.DbConnection! connection, System.Data.Common.DbTransaction? transaction, SqlBound.Migrations.AppliedMigration! migration, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SqlBound.MySql.MySqlMigrationLedger.RemoveAsync(System.Data.Common.DbConnection! connection, System.Data.Common.DbTransaction? transaction, long version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SqlBound.MySql.MySqlMigrationLedger.SupportsTransactionalDdl.get -> bool
+SqlBound.MySql.MySqlQueryDescriber
+SqlBound.MySql.MySqlQueryDescriber.DescribeAsync(System.Data.Common.DbConnection! connection, string! commandText, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<SqlBound.Introspection.QueryDescription!>!
+SqlBound.MySql.MySqlQueryDescriber.MySqlQueryDescriber() -> void
