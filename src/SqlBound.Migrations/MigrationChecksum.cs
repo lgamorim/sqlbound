@@ -14,6 +14,6 @@ internal static class MigrationChecksum
     {
         var normalized = upScript.Replace("\r\n", "\n");
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
-        return Convert.ToHexStringLower(hash);
+        return Convert.ToHexString(hash).ToLowerInvariant();
     }
 }
