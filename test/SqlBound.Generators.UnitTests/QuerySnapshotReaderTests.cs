@@ -62,6 +62,26 @@ public sealed class QuerySnapshotReaderTests
     }
 
     [Fact]
+    public void Should_ReadNullClrTypeText_When_ProviderCannotInferAParameterType()
+    {
+        var read = QuerySnapshotReader.TryRead(
+            """
+            {
+              "commandText": "SELECT id FROM items WHERE id = @id",
+              "provider": "sqlite",
+              "columns": [],
+              "parameters": [ { "name": "id", "sqlTypeName": "", "clrTypeText": null } ]
+            }
+            """,
+            out var snapshot);
+
+        Assert.True(read);
+        var parameter = Assert.Single(snapshot!.Parameters);
+        Assert.Equal("id", parameter.Name);
+        Assert.Null(parameter.ClrTypeText);
+    }
+
+    [Fact]
     public void Should_IgnoreUnknownFields_When_SnapshotCarriesExtraMetadata()
     {
         var read = QuerySnapshotReader.TryRead(

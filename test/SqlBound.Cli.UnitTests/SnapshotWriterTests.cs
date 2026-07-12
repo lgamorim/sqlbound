@@ -1,4 +1,4 @@
-using SqlBound.SqlServer;
+using SqlBound.Introspection;
 
 namespace SqlBound.Cli.UnitTests;
 
@@ -31,7 +31,7 @@ public sealed class SnapshotWriterTests
             """;
 
         var serialized = SnapshotWriter.Serialize(
-            "SELECT Id, Name FROM dbo.Items WHERE Id = @id", Description);
+            "SELECT Id, Name FROM dbo.Items WHERE Id = @id", Description, DatabaseProviders.SqlServer);
 
         Assert.Equal(expected.Replace("\r\n", "\n"), serialized);
     }
@@ -39,7 +39,8 @@ public sealed class SnapshotWriterTests
     [Fact]
     public void Should_SerializeEmptyArrays_When_StatementHasNoColumnsOrParameters()
     {
-        var serialized = SnapshotWriter.Serialize("DELETE FROM dbo.Items", new QueryDescription([], []));
+        var serialized = SnapshotWriter.Serialize(
+            "DELETE FROM dbo.Items", new QueryDescription([], []), DatabaseProviders.SqlServer);
 
         Assert.Contains("\"columns\": []", serialized);
         Assert.Contains("\"parameters\": []", serialized);
@@ -49,7 +50,7 @@ public sealed class SnapshotWriterTests
     public void Should_RoundTripThroughAnalyzerReader_When_SqlNeedsEscaping()
     {
         const string commandText = "SELECT '\"' AS Quote,\n\t1 AS N FROM dbo.Items WHERE Name = 'O''Brien \\ co'";
-        var serialized = SnapshotWriter.Serialize(commandText, Description);
+        var serialized = SnapshotWriter.Serialize(commandText, Description, DatabaseProviders.SqlServer);
 
         var read = Generators.QuerySnapshotReader.TryRead(serialized, out var snapshot);
 
@@ -62,6 +63,31 @@ public sealed class SnapshotWriterTests
         Assert.Equal(
             Description.Parameters.Select(p => (p.Name, p.SqlTypeName, p.ClrTypeText)),
             snapshot.Parameters.Select(p => (p.Name, p.SqlTypeName, p.ClrTypeText)));
+    }
+
+    [Fact]
+    public void Should_SerializeNullClrTypeText_When_ParameterTypeIsUnknown()
+    {
+        var description = new QueryDescription([], [new DescribedParameter("id", string.Empty, ClrTypeText: null)]);
+
+        var serialized = SnapshotWriter.Serialize(
+            "SELECT id FROM items WHERE id = @id", description, DatabaseProviders.Sqlite);
+
+        Assert.Contains("\"clrTypeText\": null }", serialized);
+
+        var read = Generators.QuerySnapshotReader.TryRead(serialized, out var snapshot);
+        Assert.True(read);
+        var parameter = Assert.Single(snapshot!.Parameters);
+        Assert.Null(parameter.ClrTypeText);
+    }
+
+    [Fact]
+    public void Should_SerializeTheGivenProviderTag_When_ProviderIsSqlite()
+    {
+        var serialized = SnapshotWriter.Serialize(
+            "SELECT id FROM items", new QueryDescription([], []), DatabaseProviders.Sqlite);
+
+        Assert.Contains("\"provider\": \"sqlite\"", serialized);
     }
 
     [Fact]

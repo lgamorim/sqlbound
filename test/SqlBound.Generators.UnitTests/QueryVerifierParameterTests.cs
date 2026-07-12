@@ -76,6 +76,18 @@ public sealed class QueryVerifierParameterTests
     }
 
     [Fact]
+    public void Should_ReportNothing_When_ParameterClrTypeIsUnknown()
+    {
+        // SQLite has no static parameter typing: a snapshot with a null ClrTypeText means the
+        // provider could not infer one, so SQLB110 has nothing to compare against and must stay
+        // silent even though the declared C# type looks unrelated to the (empty) SQL type name.
+        var model = QueryModel(new MethodParameterModel("id", "string", ParameterKind.Scalar));
+        var snapshot = Snapshot(new SnapshotParameter("id", string.Empty, ClrTypeText: null));
+
+        Assert.Empty(QueryVerifier.Verify(model, snapshot));
+    }
+
+    [Fact]
     public void Should_ReportResultSetOnExecute_When_ExecuteStatementReturnsColumns()
     {
         var model = ExecuteModel();

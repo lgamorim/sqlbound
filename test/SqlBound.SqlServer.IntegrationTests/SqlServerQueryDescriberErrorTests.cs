@@ -1,4 +1,5 @@
 using Microsoft.Data.SqlClient;
+using SqlBound.Introspection;
 
 namespace SqlBound.SqlServer.IntegrationTests;
 
@@ -11,7 +12,7 @@ public sealed class SqlServerQueryDescriberErrorTests(SqlServerFixture fixture)
         const string commandText = "SELEC Id FROM dbo.Items";
 
         var exception = await Assert.ThrowsAsync<SqlBoundDescribeException>(
-            () => SqlServerQueryDescriber.DescribeAsync(
+            () => new SqlServerQueryDescriber().DescribeAsync(
                 connection, commandText, TestContext.Current.CancellationToken));
 
         Assert.Equal(commandText, exception.CommandText);
@@ -26,7 +27,7 @@ public sealed class SqlServerQueryDescriberErrorTests(SqlServerFixture fixture)
         const string commandText = "SELECT Id FROM dbo.NoSuchTable";
 
         var exception = await Assert.ThrowsAsync<SqlBoundDescribeException>(
-            () => SqlServerQueryDescriber.DescribeAsync(
+            () => new SqlServerQueryDescriber().DescribeAsync(
                 connection, commandText, TestContext.Current.CancellationToken));
 
         Assert.Equal(commandText, exception.CommandText);
@@ -40,7 +41,7 @@ public sealed class SqlServerQueryDescriberErrorTests(SqlServerFixture fixture)
         const string commandText = "SELECT Id INTO #scratch FROM dbo.Items; SELECT Id FROM #scratch";
 
         var exception = await Assert.ThrowsAsync<SqlBoundDescribeException>(
-            () => SqlServerQueryDescriber.DescribeAsync(
+            () => new SqlServerQueryDescriber().DescribeAsync(
                 connection, commandText, TestContext.Current.CancellationToken));
 
         Assert.Equal(commandText, exception.CommandText);
@@ -53,7 +54,7 @@ public sealed class SqlServerQueryDescriberErrorTests(SqlServerFixture fixture)
         const string commandText = "SELECT Id FROM dbo.Items WHERE Id = @p AND Name = @p";
 
         var exception = await Assert.ThrowsAsync<SqlBoundDescribeException>(
-            () => SqlServerQueryDescriber.DescribeAsync(
+            () => new SqlServerQueryDescriber().DescribeAsync(
                 connection, commandText, TestContext.Current.CancellationToken));
 
         Assert.Equal(commandText, exception.CommandText);
@@ -68,13 +69,13 @@ public sealed class SqlServerQueryDescriberErrorTests(SqlServerFixture fixture)
         await using var connection = new SqlConnection();
 
         await Assert.ThrowsAnyAsync<ArgumentException>(
-            () => SqlServerQueryDescriber.DescribeAsync(connection, commandText!, TestContext.Current.CancellationToken));
+            () => new SqlServerQueryDescriber().DescribeAsync(connection, commandText!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task Should_ThrowArgumentNullException_When_ConnectionIsNull()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => SqlServerQueryDescriber.DescribeAsync(null!, "SELECT 1", TestContext.Current.CancellationToken));
+            () => new SqlServerQueryDescriber().DescribeAsync(null!, "SELECT 1", TestContext.Current.CancellationToken));
     }
 }

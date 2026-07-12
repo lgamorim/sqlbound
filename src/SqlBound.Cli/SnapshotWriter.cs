@@ -1,5 +1,5 @@
 using System.Text;
-using SqlBound.SqlServer;
+using SqlBound.Introspection;
 
 namespace SqlBound.Cli;
 
@@ -12,16 +12,14 @@ namespace SqlBound.Cli;
 /// </summary>
 internal static class SnapshotWriter
 {
-    public const string Provider = "sqlserver";
-
     public static string FileName(string commandText) => $"query-{SnapshotKey.Compute(commandText)}.json";
 
-    public static string Serialize(string commandText, QueryDescription description)
+    public static string Serialize(string commandText, QueryDescription description, string provider)
     {
         var builder = new StringBuilder();
         builder.Append("{\n");
         builder.Append($"  \"commandText\": {Quote(commandText)},\n");
-        builder.Append($"  \"provider\": {Quote(Provider)},\n");
+        builder.Append($"  \"provider\": {Quote(provider)},\n");
 
         if (description.Columns.Count == 0)
         {
@@ -55,7 +53,7 @@ internal static class SnapshotWriter
                 var parameter = description.Parameters[i];
                 builder.Append(
                     $"    {{ \"name\": {Quote(parameter.Name)}, \"sqlTypeName\": {Quote(parameter.SqlTypeName)}, " +
-                    $"\"clrTypeText\": {Quote(parameter.ClrTypeText)} }}");
+                    $"\"clrTypeText\": {QuoteOrNull(parameter.ClrTypeText)} }}");
                 builder.Append(i < description.Parameters.Count - 1 ? ",\n" : "\n");
             }
 
@@ -65,6 +63,8 @@ internal static class SnapshotWriter
         builder.Append("}\n");
         return builder.ToString();
     }
+
+    private static string QuoteOrNull(string? value) => value is null ? "null" : Quote(value);
 
     private static string Quote(string value)
     {

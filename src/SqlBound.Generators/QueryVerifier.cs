@@ -105,7 +105,9 @@ internal static class QueryVerifier
             }
 
             usedNames.Add(declared.Name);
-            if (StripNullableSuffix(declared.TypeText) != described.ClrTypeText)
+            // A null ClrTypeText means the provider has no static parameter typing (e.g. SQLite) -
+            // there is nothing to compare the declared C# type against.
+            if (described.ClrTypeText is not null && StripNullableSuffix(declared.TypeText) != described.ClrTypeText)
             {
                 findings.Add(new VerificationFinding(
                     SqlVerificationDiagnostics.ParameterTypeMismatch,

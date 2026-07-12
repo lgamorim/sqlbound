@@ -56,7 +56,7 @@ internal static class QuerySnapshotReader
             if (parameterItems[i] is not Dictionary<string, object?> parameter
                 || !TryGetString(parameter, "name", out var name)
                 || !TryGetString(parameter, "sqlTypeName", out var sqlTypeName)
-                || !TryGetString(parameter, "clrTypeText", out var clrTypeText))
+                || !TryGetNullableString(parameter, "clrTypeText", out var clrTypeText))
             {
                 return false;
             }
@@ -81,6 +81,30 @@ internal static class QuerySnapshotReader
         }
 
         result = string.Empty;
+        return false;
+    }
+
+    private static bool TryGetNullableString(Dictionary<string, object?> map, string key, out string? result)
+    {
+        if (!map.TryGetValue(key, out var value))
+        {
+            result = null;
+            return false;
+        }
+
+        if (value is null)
+        {
+            result = null;
+            return true;
+        }
+
+        if (value is string text)
+        {
+            result = text;
+            return true;
+        }
+
+        result = null;
         return false;
     }
 
