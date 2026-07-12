@@ -68,9 +68,11 @@ and how SQL Server introspection works today.
 ## Migrations
 
 Schema changes are ordered SQL-file migrations — paired `{version}_{name}.up.sql` / `.down.sql`
-files with a timestamp version — tracked in a `_sqlbound_migrations` ledger. `dotnet sqlbound
-migrate add` scaffolds a migration and `dotnet sqlbound database create`/`drop` manage the target
-database. Applying and reverting migrations land in M14. See [docs/migrations.md](docs/migrations.md).
+files with a timestamp version — tracked in a `_sqlbound_migrations` ledger. `migrate add` scaffolds
+a migration, `migrate run` applies pending ones (each in its own transaction, refusing on checksum
+drift or out-of-order files), `migrate revert` rolls the last one back, and `migrate status` reports
+what is applied vs pending. `database create`/`drop` manage the target database. SQL Server today;
+other providers in M15. See [docs/migrations.md](docs/migrations.md).
 
 ## Packages
 

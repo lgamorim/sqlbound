@@ -7,6 +7,7 @@ namespace SqlBound.SqlServer.IntegrationTests;
 /// Exercises <see cref="MigrationRunner.StatusAsync"/> end to end against the shared container:
 /// the pure classification is unit-tested, so this proves the read-only wiring over the real ledger.
 /// </summary>
+[Collection("SqlServerMigrations")]
 public sealed class MigrationRunnerStatusTests(SqlServerFixture fixture)
 {
     private readonly SqlServerMigrationLedger _ledger = new();

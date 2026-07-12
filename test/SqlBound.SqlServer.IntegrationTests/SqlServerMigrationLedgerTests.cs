@@ -8,6 +8,7 @@ namespace SqlBound.SqlServer.IntegrationTests;
 /// sequentially (one xunit collection) and each drops the ledger table first, so they do not
 /// observe one another's rows; the describe suites run in parallel but only read other tables.
 /// </summary>
+[Collection("SqlServerMigrations")]
 public sealed class SqlServerMigrationLedgerTests(SqlServerFixture fixture)
 {
     private const string SampleChecksum =

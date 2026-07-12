@@ -8,6 +8,7 @@ namespace SqlBound.SqlServer.IntegrationTests;
 /// SQL Server ledger. Each test drops the ledger and the tables its migrations create, so the
 /// sequential methods start from a clean slate.
 /// </summary>
+[Collection("SqlServerMigrations")]
 public sealed class MigrationRunnerTests(SqlServerFixture fixture)
 {
     private readonly SqlServerMigrationLedger _ledger = new();

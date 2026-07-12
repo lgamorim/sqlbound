@@ -7,6 +7,7 @@ namespace SqlBound.SqlServer.IntegrationTests;
 /// Exercises <see cref="MigrationRunner.RevertAsync"/> end to end against the shared container.
 /// Each test drops the ledger and its tables first so the sequential methods start clean.
 /// </summary>
+[Collection("SqlServerMigrations")]
 public sealed class MigrationRunnerRevertTests(SqlServerFixture fixture)
 {
     private readonly SqlServerMigrationLedger _ledger = new();
