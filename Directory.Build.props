@@ -12,7 +12,7 @@
 
   <PropertyGroup Label="Package metadata">
     <Authors>Luís Amorim</Authors>
-    <PackageVersion>0.5.0</PackageVersion>
+    <PackageVersion>1.0.0-preview.1</PackageVersion>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/lgamorim/sqlbound</PackageProjectUrl>
     <RepositoryUrl>https://github.com/lgamorim/sqlbound</RepositoryUrl>
