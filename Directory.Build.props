@@ -10,6 +10,19 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <!--
+    Strong-naming is a one-way, identity-level decision fixed at 1.0: a strong-named consumer
+    cannot reference an unsigned assembly, and every data-access peer (EF Core, Dapper, Npgsql,
+    Microsoft.Data.*) is signed. Every project shares one committed key (the key is not a secret;
+    strong naming is an identity token, not a security boundary). PublicKey lets the SDK stamp each
+    InternalsVisibleTo with the friend's key automatically.
+  -->
+  <PropertyGroup Label="Strong naming">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)sqlbound.snk</AssemblyOriginatorKeyFile>
+    <PublicKey>002400000480000094000000060200000024000052534131000400000100010099008ae592c0e403ce8ee0fad0005f95e61c709799847b62d56c375c739ac245fb993ccb7912a3d983024e1478ab13ba15094ae76aac09342324d3746124c97c9ac21cb8b877948400a7b7689f74ab55771620618f0a685fadb784a4a7636f9270647efb8a4fbaded853792609197b6fb2d271f178438f06a77c0746523a97ca</PublicKey>
+  </PropertyGroup>
+
   <PropertyGroup Label="Package metadata">
     <Authors>Luís Amorim</Authors>
     <PackageVersion>1.0.0-preview.1</PackageVersion>
