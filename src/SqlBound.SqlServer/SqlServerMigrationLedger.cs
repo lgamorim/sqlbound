@@ -14,6 +14,9 @@ public sealed class SqlServerMigrationLedger : IMigrationLedger
     private const string TableName = "_sqlbound_migrations";
 
     /// <inheritdoc />
+    public bool SupportsTransactionalDdl => true;
+
+    /// <inheritdoc />
     public async Task EnsureCreatedAsync(DbConnection connection, CancellationToken cancellationToken)
     {
         await using var command = AsSqlConnection(connection).CreateCommand();

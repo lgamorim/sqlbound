@@ -65,19 +65,36 @@ public static class MigrationRunner
             return null;
         }
 
-        await using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        DbTransaction? transaction = ledger.SupportsTransactionalDdl
+            ? await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false)
+            : null;
         try
         {
             // MigrationReverter.Plan guarantees a reversible target, so DownScript is non-null here.
             await ExecuteScriptAsync(connection, transaction, target.DownScript!, cancellationToken).ConfigureAwait(false);
             await ledger.RemoveAsync(connection, transaction, target.Version, cancellationToken).ConfigureAwait(false);
-            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             return target;
         }
         catch (DbException exception)
         {
-            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+            if (transaction is not null)
+            {
+                await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             throw new MigrationExecutionException(target.Version, target.Name, exception);
+        }
+        finally
+        {
+            if (transaction is not null)
+            {
+                await transaction.DisposeAsync().ConfigureAwait(false);
+            }
         }
     }
 
@@ -105,7 +122,9 @@ public static class MigrationRunner
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
-        await using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        DbTransaction? transaction = ledger.SupportsTransactionalDdl
+            ? await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false)
+            : null;
         try
         {
             var stopwatch = Stopwatch.StartNew();
@@ -119,18 +138,33 @@ public static class MigrationRunner
                 timeProvider.GetUtcNow().UtcDateTime,
                 stopwatch.ElapsedMilliseconds);
             await ledger.RecordAppliedAsync(connection, transaction, record, cancellationToken).ConfigureAwait(false);
-            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             return record;
         }
         catch (DbException exception)
         {
-            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+            if (transaction is not null)
+            {
+                await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             throw new MigrationExecutionException(migration.Version, migration.Name, exception);
+        }
+        finally
+        {
+            if (transaction is not null)
+            {
+                await transaction.DisposeAsync().ConfigureAwait(false);
+            }
         }
     }
 
     private static async Task ExecuteScriptAsync(
-        DbConnection connection, DbTransaction transaction, string script, CancellationToken cancellationToken)
+        DbConnection connection, DbTransaction? transaction, string script, CancellationToken cancellationToken)
     {
         await using var command = connection.CreateCommand();
         command.Transaction = transaction;

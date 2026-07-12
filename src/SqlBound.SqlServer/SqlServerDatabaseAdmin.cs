@@ -1,4 +1,5 @@
 using Microsoft.Data.SqlClient;
+using SqlBound.Migrations;
 
 namespace SqlBound.SqlServer;
 
@@ -8,14 +9,11 @@ namespace SqlBound.SqlServer;
 /// connection string that names no database or names a system database. The target name is bracketed
 /// with <c>QUOTENAME</c> server-side, so it can never be interpreted as SQL.
 /// </summary>
-public sealed class SqlServerDatabaseAdmin
+public sealed class SqlServerDatabaseAdmin : IDatabaseAdmin
 {
     private static readonly string[] SystemDatabases = ["master", "model", "msdb", "tempdb"];
 
-    /// <summary>Creates the target database if it does not already exist.</summary>
-    /// <param name="connectionString">A connection string whose <c>Initial Catalog</c> is the database to create.</param>
-    /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns>The name of the target database.</returns>
+    /// <inheritdoc />
     public Task<string> CreateAsync(string connectionString, CancellationToken cancellationToken) =>
         ExecuteAgainstMasterAsync(
             connectionString,
@@ -28,10 +26,7 @@ public sealed class SqlServerDatabaseAdmin
             """,
             cancellationToken);
 
-    /// <summary>Drops the target database if it exists, forcing out any open connections first.</summary>
-    /// <param name="connectionString">A connection string whose <c>Initial Catalog</c> is the database to drop.</param>
-    /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns>The name of the target database.</returns>
+    /// <inheritdoc />
     public Task<string> DropAsync(string connectionString, CancellationToken cancellationToken) =>
         ExecuteAgainstMasterAsync(
             connectionString,

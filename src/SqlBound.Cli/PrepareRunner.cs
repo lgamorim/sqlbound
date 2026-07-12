@@ -1,4 +1,3 @@
-using System.Data.Common;
 using Microsoft.Data.Sqlite;
 using Microsoft.Data.SqlClient;
 using MySqlConnector;
@@ -40,7 +39,7 @@ internal static class PrepareRunner
             output.WriteLine($"warning: {warning}");
         }
 
-        var connection = CreateConnection(target);
+        var connection = ProviderServices.CreateConnection(target);
         await using (connection.ConfigureAwait(false))
         {
             try
@@ -116,14 +115,6 @@ internal static class PrepareRunner
             return 0;
         }
     }
-
-    private static DbConnection CreateConnection(DatabaseTarget target) => target.Provider switch
-    {
-        DatabaseProviders.Sqlite => new SqliteConnection(target.ConnectionString),
-        DatabaseProviders.Postgres => new NpgsqlConnection(target.ConnectionString),
-        DatabaseProviders.MySql => new MySqlConnection(target.ConnectionString),
-        _ => new SqlConnection(target.ConnectionString),
-    };
 
     private static IQueryDescriber CreateDescriber(DatabaseTarget target) => target.Provider switch
     {
