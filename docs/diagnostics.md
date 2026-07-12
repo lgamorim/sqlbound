@@ -50,6 +50,7 @@ Two comparison rules worth knowing:
 - **Types compare as mapped CLR types, not SQL type names** — SQL Server's suggested parameter
   types are inferences (a comparison against `decimal(18,2)` suggests `decimal(38,19)`), so raw
   SQL type comparison would false-positive.
-- **SQLB110 needs a provider-reported parameter type to fire.** SQLite has no static parameter
-  typing (see [introspection.md](introspection.md)), so a SQLite-sourced parameter never triggers
-  SQLB110 — its C# type is trusted from the method's own declared signature rather than verified.
+- **SQLB110 needs a provider-reported parameter type to fire.** SQLite and MySQL have no static
+  parameter typing (see [introspection.md](introspection.md)), so a parameter sourced from either
+  never triggers SQLB110 — its C# type is trusted from the method's own declared signature rather
+  than verified.
