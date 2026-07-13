@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/lgamorim/sqlbound/master/assets/logo.png" alt="SqlBound" width="280">
-</p>
+![SqlBound](https://raw.githubusercontent.com/lgamorim/sqlbound/master/assets/logo.png)
 
 # SqlBound
 
