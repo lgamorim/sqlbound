@@ -32,6 +32,7 @@ methods that would collide with Dapper's. See
 
 ```csharp
 using System.Data.Common;
+using SqlBound;
 
 public static partial class ItemQueries
 {

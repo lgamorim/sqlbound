@@ -16,6 +16,7 @@ libraries share a project without conflict.
 ## Example
 
 ```csharp
+using System.Data.Common;
 using SqlBound;
 
 public static partial class ItemQueries
