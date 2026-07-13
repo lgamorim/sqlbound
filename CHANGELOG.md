@@ -44,6 +44,10 @@ the MySQL scanner fix below.
   `--` starts a comment only when followed by whitespace or the end of the
   statement, so an expression like `1--@x` no longer swallows the rest of the
   line.
+- `SqlSession.FetchScalarAsync<T>` reports a failed scalar conversion as an
+  `InvalidOperationException` naming the actual and requested types (instead
+  of leaking a bare `InvalidCastException`), and its no-value error message
+  now acknowledges that the result may have been a database NULL.
 
 ### Changed
 
