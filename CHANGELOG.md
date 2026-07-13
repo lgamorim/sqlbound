@@ -31,7 +31,8 @@ the MySQL scanner fix below.
   documentation-site decision.
 - A DocFX documentation site published to GitHub Pages.
 - A tag-triggered NuGet release workflow (publish deliberately gated off until
-  the 1.0.0 promotion).
+  the 1.0.0 promotion, and additionally guarded by a required
+  `expected-version` input that must match the packed output).
 
 ### Fixed
 

@@ -2,9 +2,10 @@ name: Release
 
 # Builds and packs the release on any v*.*.* tag, but never publishes on its own.
 # Publishing to nuget.org happens only through a deliberate manual run of this
-# workflow with publish=true — and only once a maintainer has added the
-# NUGET_API_KEY repository secret. A plain tag push produces verified packages as
-# build artifacts for review; it does not release them.
+# workflow with publish=true and an expected-version that matches what the selected
+# ref packs (run it from the release tag, not master) — and only once a maintainer
+# has added the NUGET_API_KEY repository secret. A plain tag push produces verified
+# packages as build artifacts for review; it does not release them.
 on:
   push:
     tags:
@@ -15,6 +16,10 @@ on:
         description: 'Publish packages to nuget.org (leave unchecked to only build and pack)'
         type: boolean
         default: false
+      expected-version:
+        description: 'The exact PackageVersion this run must publish (e.g. 1.0.0); required when publish is checked'
+        type: string
+        default: ''
 
 jobs:
   release:
@@ -48,6 +53,23 @@ jobs:
           path: |
             artifacts/*.nupkg
             artifacts/*.snupkg
+
+      - name: Verify the version being published
+        # A workflow_dispatch run builds whatever ref was selected in the "Run workflow"
+        # dropdown — master by default, not the release tag. Requiring the maintainer to
+        # type the exact version and matching it against the packed output makes publishing
+        # a stale or unintended ref fail here instead of reaching nuget.org.
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish }}
+        run: |
+          expected='${{ inputs.expected-version }}'
+          if [ -z "$expected" ]; then
+            echo "::error::publish=true requires expected-version to be set."
+            exit 1
+          fi
+          if [ ! -f "artifacts/SqlBound.${expected}.nupkg" ]; then
+            echo "::error::This run packed $(ls artifacts/SqlBound.[0-9]*.nupkg), not version ${expected}. Select the release tag as the run's ref and set expected-version to its version."
+            exit 1
+          fi
 
       - name: Publish to nuget.org
         # Gate: only a manual workflow_dispatch with publish=true reaches this step.
