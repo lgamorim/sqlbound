@@ -13,9 +13,12 @@ public sealed class SqliteDatabaseAdminTests : IDisposable
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();
-        if (File.Exists(_path))
+        foreach (var path in new[] { _path, $"{_path}-wal", $"{_path}-shm" })
         {
-            File.Delete(_path);
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
         }
     }
 
@@ -35,6 +38,21 @@ public sealed class SqliteDatabaseAdminTests : IDisposable
         await new SqliteDatabaseAdmin().DropAsync(ConnectionString, Token);
 
         Assert.False(File.Exists(_path));
+    }
+
+    [Fact]
+    public async Task Should_DeleteWalAndShmSidecarFiles_When_Drop()
+    {
+        // A crashed process can leave the WAL sidecars behind even after every connection is
+        // gone; a drop that keeps them would poison the next database created at the same path.
+        await new SqliteDatabaseAdmin().CreateAsync(ConnectionString, Token);
+        File.WriteAllText($"{_path}-wal", "");
+        File.WriteAllText($"{_path}-shm", "");
+
+        await new SqliteDatabaseAdmin().DropAsync(ConnectionString, Token);
+
+        Assert.False(File.Exists($"{_path}-wal"));
+        Assert.False(File.Exists($"{_path}-shm"));
     }
 
     [Fact]

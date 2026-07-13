@@ -48,6 +48,8 @@ the MySQL scanner fix below.
   `InvalidOperationException` naming the actual and requested types (instead
   of leaking a bare `InvalidCastException`), and its no-value error message
   now acknowledges that the result may have been a database NULL.
+- `sqlbound database drop` for SQLite also removes stale `-wal`/`-shm`
+  sidecar files a crashed process may have left beside the database file.
 
 ### Changed
 
