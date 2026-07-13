@@ -6,8 +6,9 @@ namespace SqlBound.MySql;
 /// names — <c>MySqlQueryDescriber</c> must pre-declare them before it can even describe a
 /// statement's columns — so this is a hand-rolled scan rather than a server round-trip. It skips
 /// single- and double-quoted string literals (both doubled-quote and backslash escaping),
-/// backtick-quoted identifiers, and <c>--</c>/<c>#</c>/<c>/* */</c> comments, so a literal like
-/// <c>'user@example.com'</c> is never mistaken for a placeholder.
+/// backtick-quoted identifiers, <c>--</c>/<c>#</c>/<c>/* */</c> comments, and <c>@@</c> system
+/// variables, so a literal like <c>'user@example.com'</c> or a variable like <c>@@sql_mode</c> is
+/// never mistaken for a placeholder.
 /// </summary>
 internal static class MySqlParameterScanner
 {
@@ -24,12 +25,20 @@ internal static class MySqlParameterScanner
                 case '\'' or '"' or '`':
                     position = SkipQuoted(commandText, position, current);
                     break;
-                case '-' when Peek(commandText, position + 1) == '-':
+                // MySQL only recognizes -- as a comment when followed by whitespace or the end
+                // of the statement; "1--@x" is the arithmetic expression 1 - (-@x).
+                case '-' when Peek(commandText, position + 1) == '-'
+                    && (position + 2 >= commandText.Length || char.IsWhiteSpace(commandText[position + 2])):
                 case '#':
                     position = SkipLineComment(commandText, position);
                     break;
                 case '/' when Peek(commandText, position + 1) == '*':
                     position = SkipBlockComment(commandText, position);
+                    break;
+                // @@name is a system variable (optionally scoped, e.g. @@session.sql_mode),
+                // never a parameter placeholder.
+                case '@' when Peek(commandText, position + 1) == '@':
+                    position = SkipSystemVariable(commandText, position);
                     break;
                 case '@' when IsIdentifierStart(Peek(commandText, position + 1)):
                     position = ReadParameterName(commandText, position, names, seen);
@@ -84,6 +93,17 @@ internal static class MySqlParameterScanner
                 return position + 1;
             }
 
+            position++;
+        }
+
+        return position;
+    }
+
+    private static int SkipSystemVariable(string text, int position)
+    {
+        position += 2;
+        while (position < text.Length && (IsIdentifierPart(text[position]) || text[position] == '.'))
+        {
             position++;
         }
 

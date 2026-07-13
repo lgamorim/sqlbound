@@ -3,6 +3,7 @@
   <PropertyGroup>
     <Description>Provider-neutral database introspection contracts for SqlBound's prepare step.</Description>
     <IsAotCompatible>true</IsAotCompatible>
+    <TrackPublicApi>true</TrackPublicApi>
   </PropertyGroup>
 
 </Project>

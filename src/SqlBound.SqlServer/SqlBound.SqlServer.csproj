@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <Description>SQL Server introspection and type mapping for SqlBound.</Description>
+    <TrackPublicApi>true</TrackPublicApi>
+    <PackageTags>$(PackageTags);sqlserver;mssql</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

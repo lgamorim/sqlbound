@@ -1,0 +1,15 @@
+#nullable enable
+SqlBound.Npgsql.NpgsqlDatabaseAdmin
+SqlBound.Npgsql.NpgsqlDatabaseAdmin.CreateAsync(string! connectionString, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string!>!
+SqlBound.Npgsql.NpgsqlDatabaseAdmin.DropAsync(string! connectionString, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string!>!
+SqlBound.Npgsql.NpgsqlDatabaseAdmin.NpgsqlDatabaseAdmin() -> void
+SqlBound.Npgsql.NpgsqlMigrationLedger
+SqlBound.Npgsql.NpgsqlMigrationLedger.EnsureCreatedAsync(System.Data.Common.DbConnection! connection, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SqlBound.Npgsql.NpgsqlMigrationLedger.GetAppliedAsync(System.Data.Common.DbConnection! connection, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.AppliedMigration!>!>!
+SqlBound.Npgsql.NpgsqlMigrationLedger.NpgsqlMigrationLedger() -> void
+SqlBound.Npgsql.NpgsqlMigrationLedger.RecordAppliedAsync(System.Data.Common.DbConnection! connection, System.Data.Common.DbTransaction? transaction, SqlBound.Migrations.AppliedMigration! migration, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SqlBound.Npgsql.NpgsqlMigrationLedger.RemoveAsync(System.Data.Common.DbConnection! connection, System.Data.Common.DbTransaction? transaction, long version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SqlBound.Npgsql.NpgsqlMigrationLedger.SupportsTransactionalDdl.get -> bool
+SqlBound.Npgsql.NpgsqlQueryDescriber
+SqlBound.Npgsql.NpgsqlQueryDescriber.DescribeAsync(System.Data.Common.DbConnection! connection, string! commandText, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<SqlBound.Introspection.QueryDescription!>!
+SqlBound.Npgsql.NpgsqlQueryDescriber.NpgsqlQueryDescriber() -> void

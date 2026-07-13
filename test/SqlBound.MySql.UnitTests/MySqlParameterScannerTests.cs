@@ -101,4 +101,37 @@ public sealed class MySqlParameterScannerTests
 
         Assert.Equal(["id"], names);
     }
+
+    [Fact]
+    public void Should_NotTreatDoubleDashAsComment_When_NotFollowedByWhitespace()
+    {
+        // MySQL only recognizes -- as a comment when followed by whitespace (or end of
+        // statement); "1--@offset" is the arithmetic expression 1 - (-@offset).
+        var names = MySqlParameterScanner.ExtractNames("SELECT 1--@offset");
+
+        Assert.Equal(["offset"], names);
+    }
+
+    [Fact]
+    public void Should_TreatDoubleDashAtEndOfText_AsComment()
+    {
+        var names = MySqlParameterScanner.ExtractNames("SELECT id FROM items WHERE id = @id --");
+
+        Assert.Equal(["id"], names);
+    }
+
+    [Fact]
+    public void Should_IgnoreSystemVariable_When_CommandUsesDoubleAtSign()
+    {
+        Assert.Empty(MySqlParameterScanner.ExtractNames("SELECT @@sql_mode"));
+    }
+
+    [Fact]
+    public void Should_IgnoreScopedSystemVariable_When_CommandUsesDoubleAtSign()
+    {
+        var names = MySqlParameterScanner.ExtractNames(
+            "SELECT @@session.sql_mode, id FROM items WHERE id = @id");
+
+        Assert.Equal(["id"], names);
+    }
 }

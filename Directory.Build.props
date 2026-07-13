@@ -10,10 +10,38 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <!--
+    Strong-naming is a one-way, identity-level decision fixed at 1.0: a strong-named consumer
+    cannot reference an unsigned assembly, and every data-access peer (EF Core, Dapper, Npgsql,
+    Microsoft.Data.*) is signed. Every project shares one committed key (the key is not a secret;
+    strong naming is an identity token, not a security boundary). PublicKey lets the SDK stamp each
+    InternalsVisibleTo with the friend's key automatically.
+  -->
+  <PropertyGroup Label="Strong naming">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)sqlbound.snk</AssemblyOriginatorKeyFile>
+    <PublicKey>002400000480000094000000060200000024000052534131000400000100010099008ae592c0e403ce8ee0fad0005f95e61c709799847b62d56c375c739ac245fb993ccb7912a3d983024e1478ab13ba15094ae76aac09342324d3746124c97c9ac21cb8b877948400a7b7689f74ab55771620618f0a685fadb784a4a7636f9270647efb8a4fbaded853792609197b6fb2d271f178438f06a77c0746523a97ca</PublicKey>
+  </PropertyGroup>
+
+  <!--
+    Reproducible builds. SourceLink ships in the .NET 8+ SDK and is active via PublishRepositoryUrl
+    + EmbedUntrackedSources below, so consumers can step into the exact committed sources from the
+    snupkg symbols. ContinuousIntegrationBuild normalizes source paths for byte-reproducible output;
+    it is gated on CI (GitHub Actions sets CI=true) because it also disables local path mapping that
+    debuggers rely on. Deterministic is the SDK default — pinned here to make the intent explicit.
+  -->
+  <PropertyGroup Label="Reproducible builds">
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
   <PropertyGroup Label="Package metadata">
     <Authors>Luís Amorim</Authors>
-    <PackageVersion>0.5.0</PackageVersion>
+    <PackageVersion>1.0.0-rc.1</PackageVersion>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageTags>sql;ado.net;dapper;source-generator;native-aot;sqlx;query;database;migrations</PackageTags>
     <PackageProjectUrl>https://github.com/lgamorim/sqlbound</PackageProjectUrl>
     <RepositoryUrl>https://github.com/lgamorim/sqlbound</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -22,6 +50,14 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
+
+  <!-- The shared NuGet README and icon (packed at the package root, referenced by the
+       PackageReadmeFile / PackageIcon properties above). The wordmark logo is not packed:
+       both READMEs load it by absolute URL, so it need not travel inside every package. -->
+  <ItemGroup Condition="'$(IsPackable)' != 'false'">
+    <None Include="$(MSBuildThisFileDirectory)docs\nuget\README.md" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)assets\icon.png" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
 
   <!--
     Test projects are exempt from public XML-doc enforcement and are never packed (coding-standards.md).

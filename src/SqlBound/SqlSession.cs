@@ -38,7 +38,7 @@ public sealed class SqlSession
     {
         ValidateAndPrepare(sql, cancellationToken);
 
-        using var command = CreateCommand(sql, parameters);
+        await using var command = CreateCommand(sql, parameters);
         return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -49,8 +49,9 @@ public sealed class SqlSession
     /// </summary>
     /// <exception cref="ArgumentException"><paramref name="sql"/> is null or whitespace.</exception>
     /// <exception cref="InvalidOperationException">
-    /// The connection is not open, or the result is a database null and <typeparamref name="T"/>
-    /// is a non-nullable value type.
+    /// The connection is not open, the result is a database null and <typeparamref name="T"/>
+    /// is a non-nullable value type, or the result cannot be converted to
+    /// <typeparamref name="T"/>.
     /// </exception>
     public async Task<T?> FetchScalarAsync<T>(
         string sql,
@@ -59,7 +60,7 @@ public sealed class SqlSession
     {
         ValidateAndPrepare(sql, cancellationToken);
 
-        using var command = CreateCommand(sql, parameters);
+        await using var command = CreateCommand(sql, parameters);
         var result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
 
         return ConvertScalar<T>(result);
@@ -72,7 +73,7 @@ public sealed class SqlSession
             if (default(T) is not null)
             {
                 throw new InvalidOperationException(
-                    $"The query returned no value, but '{typeof(T)}' is a non-nullable value type.");
+                    $"The query returned no rows or a NULL value, but '{typeof(T)}' is a non-nullable value type.");
             }
 
             return default;
@@ -84,7 +85,15 @@ public sealed class SqlSession
         }
 
         var targetType = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
-        return (T)Convert.ChangeType(result, targetType);
+        try
+        {
+            return (T)Convert.ChangeType(result, targetType);
+        }
+        catch (Exception exception) when (exception is InvalidCastException or FormatException or OverflowException)
+        {
+            throw new InvalidOperationException(
+                $"The scalar result of type '{result.GetType()}' cannot be converted to '{typeof(T)}'.", exception);
+        }
     }
 
     private void ValidateAndPrepare(string sql, CancellationToken cancellationToken)

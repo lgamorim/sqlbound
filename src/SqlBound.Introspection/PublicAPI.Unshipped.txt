@@ -1,0 +1,33 @@
+#nullable enable
+SqlBound.Introspection.DescribedColumn
+SqlBound.Introspection.DescribedColumn.ClrTypeText.get -> string!
+SqlBound.Introspection.DescribedColumn.ClrTypeText.init -> void
+SqlBound.Introspection.DescribedColumn.DescribedColumn(int Ordinal, string! Name, string! SqlTypeName, string! ClrTypeText, bool IsNullable) -> void
+SqlBound.Introspection.DescribedColumn.IsNullable.get -> bool
+SqlBound.Introspection.DescribedColumn.IsNullable.init -> void
+SqlBound.Introspection.DescribedColumn.Name.get -> string!
+SqlBound.Introspection.DescribedColumn.Name.init -> void
+SqlBound.Introspection.DescribedColumn.Ordinal.get -> int
+SqlBound.Introspection.DescribedColumn.Ordinal.init -> void
+SqlBound.Introspection.DescribedColumn.SqlTypeName.get -> string!
+SqlBound.Introspection.DescribedColumn.SqlTypeName.init -> void
+SqlBound.Introspection.DescribedParameter
+SqlBound.Introspection.DescribedParameter.ClrTypeText.get -> string?
+SqlBound.Introspection.DescribedParameter.ClrTypeText.init -> void
+SqlBound.Introspection.DescribedParameter.DescribedParameter(string! Name, string! SqlTypeName, string? ClrTypeText) -> void
+SqlBound.Introspection.DescribedParameter.Name.get -> string!
+SqlBound.Introspection.DescribedParameter.Name.init -> void
+SqlBound.Introspection.DescribedParameter.SqlTypeName.get -> string!
+SqlBound.Introspection.DescribedParameter.SqlTypeName.init -> void
+SqlBound.Introspection.IQueryDescriber
+SqlBound.Introspection.IQueryDescriber.DescribeAsync(System.Data.Common.DbConnection! connection, string! commandText, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<SqlBound.Introspection.QueryDescription!>!
+SqlBound.Introspection.QueryDescription
+SqlBound.Introspection.QueryDescription.Columns.get -> System.Collections.Generic.IReadOnlyList<SqlBound.Introspection.DescribedColumn!>!
+SqlBound.Introspection.QueryDescription.Columns.init -> void
+SqlBound.Introspection.QueryDescription.Parameters.get -> System.Collections.Generic.IReadOnlyList<SqlBound.Introspection.DescribedParameter!>!
+SqlBound.Introspection.QueryDescription.Parameters.init -> void
+SqlBound.Introspection.QueryDescription.QueryDescription(System.Collections.Generic.IReadOnlyList<SqlBound.Introspection.DescribedColumn!>! Columns, System.Collections.Generic.IReadOnlyList<SqlBound.Introspection.DescribedParameter!>! Parameters) -> void
+SqlBound.Introspection.SqlBoundDescribeException
+SqlBound.Introspection.SqlBoundDescribeException.CommandText.get -> string!
+SqlBound.Introspection.SqlBoundDescribeException.SqlBoundDescribeException(string! message, string! commandText) -> void
+SqlBound.Introspection.SqlBoundDescribeException.SqlBoundDescribeException(string! message, string! commandText, System.Exception! innerException) -> void

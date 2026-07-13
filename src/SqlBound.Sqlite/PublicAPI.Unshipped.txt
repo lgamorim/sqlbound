@@ -1,0 +1,15 @@
+#nullable enable
+SqlBound.Sqlite.SqliteDatabaseAdmin
+SqlBound.Sqlite.SqliteDatabaseAdmin.CreateAsync(string! connectionString, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string!>!
+SqlBound.Sqlite.SqliteDatabaseAdmin.DropAsync(string! connectionString, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string!>!
+SqlBound.Sqlite.SqliteDatabaseAdmin.SqliteDatabaseAdmin() -> void
+SqlBound.Sqlite.SqliteMigrationLedger
+SqlBound.Sqlite.SqliteMigrationLedger.EnsureCreatedAsync(System.Data.Common.DbConnection! connection, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SqlBound.Sqlite.SqliteMigrationLedger.GetAppliedAsync(System.Data.Common.DbConnection! connection, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<SqlBound.Migrations.AppliedMigration!>!>!
+SqlBound.Sqlite.SqliteMigrationLedger.RecordAppliedAsync(System.Data.Common.DbConnection! connection, System.Data.Common.DbTransaction? transaction, SqlBound.Migrations.AppliedMigration! migration, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SqlBound.Sqlite.SqliteMigrationLedger.RemoveAsync(System.Data.Common.DbConnection! connection, System.Data.Common.DbTransaction? transaction, long version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+SqlBound.Sqlite.SqliteMigrationLedger.SqliteMigrationLedger() -> void
+SqlBound.Sqlite.SqliteMigrationLedger.SupportsTransactionalDdl.get -> bool
+SqlBound.Sqlite.SqliteQueryDescriber
+SqlBound.Sqlite.SqliteQueryDescriber.DescribeAsync(System.Data.Common.DbConnection! connection, string! commandText, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<SqlBound.Introspection.QueryDescription!>!
+SqlBound.Sqlite.SqliteQueryDescriber.SqliteQueryDescriber() -> void

@@ -6,7 +6,8 @@ namespace SqlBound.Sqlite;
 /// <summary>
 /// The SQLite implementation of <see cref="IDatabaseAdmin"/>. SQLite has no server: the "database"
 /// is the file named by the connection string's <c>Data Source</c>. Creating it opens a connection
-/// (which materializes the file); dropping it deletes the file. Both are idempotent.
+/// (which materializes the file); dropping it deletes the file and any <c>-wal</c>/<c>-shm</c>
+/// sidecars a crashed process may have left beside it. Both are idempotent.
 /// </summary>
 public sealed class SqliteDatabaseAdmin : IDatabaseAdmin
 {
@@ -24,11 +25,16 @@ public sealed class SqliteDatabaseAdmin : IDatabaseAdmin
     {
         var dataSource = DataSourceOf(connectionString);
 
-        // Release any pooled handles so the file is not locked when we delete it.
+        // Release any pooled handles so the files are not locked when we delete them. The WAL
+        // sidecars are normally checkpointed away on a clean close, but a crashed process leaves
+        // them behind — and stale ones would poison a database later created at the same path.
         SqliteConnection.ClearAllPools();
-        if (File.Exists(dataSource))
+        foreach (var path in new[] { dataSource, $"{dataSource}-wal", $"{dataSource}-shm" })
         {
-            File.Delete(dataSource);
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
         }
 
         return Task.FromResult(dataSource);

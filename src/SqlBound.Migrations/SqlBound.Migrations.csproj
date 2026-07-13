@@ -3,6 +3,7 @@
   <PropertyGroup>
     <Description>Provider-neutral SQL-file migration model and ledger contracts for SqlBound.</Description>
     <IsAotCompatible>true</IsAotCompatible>
+    <TrackPublicApi>true</TrackPublicApi>
   </PropertyGroup>
 
   <ItemGroup>

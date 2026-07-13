@@ -1,0 +1,34 @@
+- name: Overview
+  href: index.md
+- name: Guides
+  items:
+    - name: Compile-time verification
+      href: verification.md
+    - name: Diagnostics (SQLB###)
+      href: diagnostics.md
+    - name: Introspection
+      href: introspection.md
+    - name: Migrations
+      href: migrations.md
+    - name: Using SqlBound alongside Dapper
+      href: dapper-coexistence.md
+    - name: Benchmarks
+      href: benchmarks.md
+- name: Architecture Decisions
+  items:
+    - name: 0001 — Verification split
+      href: adr/0001-verification-split.md
+    - name: 0002 — Generator snapshot consumption
+      href: adr/0002-generator-snapshot-consumption.md
+    - name: 0003 — Verification opt-in by snapshot presence
+      href: adr/0003-verification-opt-in-by-snapshot-presence.md
+    - name: 0004 — prepare is CLI-only
+      href: adr/0004-prepare-is-cli-only.md
+    - name: 0005 — SQLite describe scope
+      href: adr/0005-sqlite-describe-scope.md
+    - name: 0006 — Migration file format
+      href: adr/0006-migration-file-format.md
+    - name: 0007 — MySQL migrations not transactional
+      href: adr/0007-mysql-migrations-not-transactional.md
+    - name: 0008 — API stability and shipping
+      href: adr/0008-api-stability-and-shipping.md

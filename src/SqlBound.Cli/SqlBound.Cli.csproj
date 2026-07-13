@@ -12,6 +12,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>sqlbound</ToolCommandName>
     <Description>SqlBound command-line tool: prepare offline query snapshots, scaffold migrations, and manage the database.</Description>
+    <PackageTags>$(PackageTags);dotnet-tool;cli</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

@@ -183,8 +183,26 @@ public class SqlSessionTests
         var connection = new FakeDbConnection { ExecuteScalarResult = DBNull.Value };
         var session = new SqlSession(connection);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
             () => session.FetchScalarAsync<int>("SELECT MAX(x) FROM t", cancellationToken: TestContext.Current.CancellationToken));
+
+        // The same code path covers both an empty result set and a NULL value; the message
+        // must not claim "no value" when the database may well have returned a NULL.
+        Assert.Contains("NULL", exception.Message);
+    }
+
+    [Fact]
+    public async Task Should_ThrowInvalidOperationException_When_ScalarResultCannotConvertToRequestedType()
+    {
+        var connection = new FakeDbConnection { ExecuteScalarResult = "0e984725-c51c-4bf4-9960-e1c80e27aba0" };
+        var session = new SqlSession(connection);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => session.FetchScalarAsync<Guid>("SELECT id FROM t", cancellationToken: TestContext.Current.CancellationToken));
+
+        Assert.Contains(nameof(String), exception.Message);
+        Assert.Contains(nameof(Guid), exception.Message);
+        Assert.IsType<InvalidCastException>(exception.InnerException);
     }
 
     [Fact]
