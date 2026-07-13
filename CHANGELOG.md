@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First release candidate for 1.0 (Phase 6 — Ship, M16). Freezes the public API
 and finalizes packaging ahead of the stable 1.0.0 release. No functional
-changes to the query, verification, or migration engines from `0.5.0`.
+changes to the query, verification, or migration engines from `0.5.0` beyond
+the MySQL scanner fix below.
 
 ### Added
 
@@ -31,6 +32,13 @@ changes to the query, verification, or migration engines from `0.5.0`.
 - A DocFX documentation site published to GitHub Pages.
 - A tag-triggered NuGet release workflow (publish deliberately gated off until
   the 1.0.0 promotion).
+
+### Fixed
+
+- The MySQL parameter scanner no longer mistakes `@@` system variables (e.g.
+  `@@sql_mode`, `@@session.sql_mode`) for parameter placeholders, which made
+  `prepare` declare a bogus parameter and verification demand a method
+  parameter that should not exist.
 
 ### Changed
 

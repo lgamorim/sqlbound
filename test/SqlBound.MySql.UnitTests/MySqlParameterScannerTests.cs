@@ -101,4 +101,19 @@ public sealed class MySqlParameterScannerTests
 
         Assert.Equal(["id"], names);
     }
+
+    [Fact]
+    public void Should_IgnoreSystemVariable_When_CommandUsesDoubleAtSign()
+    {
+        Assert.Empty(MySqlParameterScanner.ExtractNames("SELECT @@sql_mode"));
+    }
+
+    [Fact]
+    public void Should_IgnoreScopedSystemVariable_When_CommandUsesDoubleAtSign()
+    {
+        var names = MySqlParameterScanner.ExtractNames(
+            "SELECT @@session.sql_mode, id FROM items WHERE id = @id");
+
+        Assert.Equal(["id"], names);
+    }
 }
