@@ -25,7 +25,10 @@ internal static class MySqlParameterScanner
                 case '\'' or '"' or '`':
                     position = SkipQuoted(commandText, position, current);
                     break;
-                case '-' when Peek(commandText, position + 1) == '-':
+                // MySQL only recognizes -- as a comment when followed by whitespace or the end
+                // of the statement; "1--@x" is the arithmetic expression 1 - (-@x).
+                case '-' when Peek(commandText, position + 1) == '-'
+                    && (position + 2 >= commandText.Length || char.IsWhiteSpace(commandText[position + 2])):
                 case '#':
                     position = SkipLineComment(commandText, position);
                     break;

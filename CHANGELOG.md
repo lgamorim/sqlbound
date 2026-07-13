@@ -40,6 +40,10 @@ the MySQL scanner fix below.
   `@@sql_mode`, `@@session.sql_mode`) for parameter placeholders, which made
   `prepare` declare a bogus parameter and verification demand a method
   parameter that should not exist.
+- The MySQL parameter scanner now applies MySQL's actual line-comment rule:
+  `--` starts a comment only when followed by whitespace or the end of the
+  statement, so an expression like `1--@x` no longer swallows the rest of the
+  line.
 
 ### Changed
 
