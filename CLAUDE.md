@@ -36,8 +36,10 @@ Follow the design constraints below; they are deliberate decisions, not suggesti
 Work proceeds milestone by milestone (M1–M16) across six phases: Bedrock (skeleton/CI, execution core, Dapper-coexistence sample), Codegen (materialization, query shapes, AOT + benchmarks), Verification (SQL Server introspection, diagnostics, offline snapshots), Providers, Migrations & CLI, and Ship (API freeze, NuGet 1.0). The Dapper-coexistence sample project (M3) doubles as a permanent CI regression test. Codegen precedes verification because the generator defines the shapes the verifier checks.
 
 ## Conventions
-@.claude/rules/coding-standards.md
-@.claude/rules/architecture.md
-@.claude/rules/design-principles.md
-@.claude/rules/testing.md
-@.claude/rules/workflow.md
+
+Shared rules come from the `library-team` profile of the `claude-rules` repo,
+copied in with its `tools/sync.ps1` (audit drift with `-Check`); sqlbound-only
+conventions live in the project file.
+
+@.claude/rules/profiles/library-team.md
+@.claude/rules/project/sqlbound.md
