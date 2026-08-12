@@ -10,15 +10,17 @@ namespace SqlBound.Cli.IntegrationTests;
 /// </summary>
 public sealed class PrepareSqlServerFixture : IAsyncLifetime
 {
-    private readonly MsSqlContainer _container =
-        new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest").Build();
-
+    private MsSqlContainer? _container;
     private Exception? _startupFailure;
 
     public async ValueTask InitializeAsync()
     {
         try
         {
+            // Build() validates the Docker endpoint and throws when no daemon is reachable at
+            // all (e.g. the macOS CI runners), so it must run inside this guard for the
+            // no-Docker skip path in GetConnectionString to engage.
+            _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest").Build();
             await _container.StartAsync();
             await using var connection = new SqlConnection(_container.GetConnectionString());
             await connection.OpenAsync();
@@ -38,11 +40,17 @@ public sealed class PrepareSqlServerFixture : IAsyncLifetime
         }
     }
 
-    public async ValueTask DisposeAsync() => await _container.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        if (_container is not null)
+        {
+            await _container.DisposeAsync();
+        }
+    }
 
     public string GetConnectionString()
     {
-        if (_startupFailure is not null)
+        if (_container is null || _startupFailure is not null)
         {
             if (Environment.GetEnvironmentVariable("CI") is "true" or "1")
             {
@@ -50,7 +58,7 @@ public sealed class PrepareSqlServerFixture : IAsyncLifetime
                     "The SQL Server container is required in CI.", _startupFailure);
             }
 
-            Assert.Skip($"SQL Server container unavailable (is Docker running?): {_startupFailure.Message}");
+            Assert.Skip($"SQL Server container unavailable (is Docker running?): {_startupFailure?.Message}");
         }
 
         return _container.GetConnectionString();

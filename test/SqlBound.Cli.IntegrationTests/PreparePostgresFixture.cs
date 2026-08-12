@@ -10,18 +10,21 @@ namespace SqlBound.Cli.IntegrationTests;
 /// </summary>
 public sealed class PreparePostgresFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:16-alpine")
-        .WithUsername("sqlbound")
-        .WithPassword("sqlbound")
-        .WithDatabase("sqlbound")
-        .Build();
-
+    private PostgreSqlContainer? _container;
     private Exception? _startupFailure;
 
     public async ValueTask InitializeAsync()
     {
         try
         {
+            // Build() validates the Docker endpoint and throws when no daemon is reachable at
+            // all (e.g. the macOS CI runners), so it must run inside this guard for the
+            // no-Docker skip path in GetConnectionUrl to engage.
+            _container = new PostgreSqlBuilder("postgres:16-alpine")
+                .WithUsername("sqlbound")
+                .WithPassword("sqlbound")
+                .WithDatabase("sqlbound")
+                .Build();
             await _container.StartAsync();
             await using var connection = new NpgsqlConnection(_container.GetConnectionString());
             await connection.OpenAsync();
@@ -41,12 +44,18 @@ public sealed class PreparePostgresFixture : IAsyncLifetime
         }
     }
 
-    public async ValueTask DisposeAsync() => await _container.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        if (_container is not null)
+        {
+            await _container.DisposeAsync();
+        }
+    }
 
     /// <summary>The container's connection expressed as a <c>postgresql://</c> URL, so tests exercise <see cref="DatabaseUrl"/>'s scheme parsing.</summary>
     public string GetConnectionUrl()
     {
-        if (_startupFailure is not null)
+        if (_container is null || _startupFailure is not null)
         {
             if (Environment.GetEnvironmentVariable("CI") is "true" or "1")
             {
@@ -54,7 +63,7 @@ public sealed class PreparePostgresFixture : IAsyncLifetime
                     "The Postgres container is required in CI.", _startupFailure);
             }
 
-            Assert.Skip($"Postgres container unavailable (is Docker running?): {_startupFailure.Message}");
+            Assert.Skip($"Postgres container unavailable (is Docker running?): {_startupFailure?.Message}");
         }
 
         return $"postgresql://sqlbound:sqlbound@{_container.Hostname}:{_container.GetMappedPublicPort(5432)}/sqlbound";
