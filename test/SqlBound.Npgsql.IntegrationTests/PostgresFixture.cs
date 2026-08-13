@@ -13,13 +13,17 @@ namespace SqlBound.Npgsql.IntegrationTests;
 /// </summary>
 public sealed class PostgresFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:16-alpine").Build();
+    private PostgreSqlContainer? _container;
     private Exception? _startupFailure;
 
     public async ValueTask InitializeAsync()
     {
         try
         {
+            // Build() validates the Docker endpoint and throws when no daemon is reachable at
+            // all (e.g. the macOS CI runners), so it must run inside this guard for the
+            // no-Docker skip path in GetConnectionString to engage.
+            _container = new PostgreSqlBuilder("postgres:16-alpine").Build();
             await _container.StartAsync();
             await using var connection = new NpgsqlConnection(_container.GetConnectionString());
             await connection.OpenAsync();
@@ -57,7 +61,13 @@ public sealed class PostgresFixture : IAsyncLifetime
         }
     }
 
-    public async ValueTask DisposeAsync() => await _container.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        if (_container is not null)
+        {
+            await _container.DisposeAsync();
+        }
+    }
 
     public async Task<NpgsqlConnection> OpenConnectionAsync()
     {
@@ -68,7 +78,7 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     public string GetConnectionString()
     {
-        if (_startupFailure is not null)
+        if (_container is null || _startupFailure is not null)
         {
             if (Environment.GetEnvironmentVariable("CI") is "true" or "1")
             {
@@ -76,7 +86,7 @@ public sealed class PostgresFixture : IAsyncLifetime
                     "The Postgres container is required in CI.", _startupFailure);
             }
 
-            Assert.Skip($"Postgres container unavailable (is Docker running?): {_startupFailure.Message}");
+            Assert.Skip($"Postgres container unavailable (is Docker running?): {_startupFailure?.Message}");
         }
 
         return _container.GetConnectionString();

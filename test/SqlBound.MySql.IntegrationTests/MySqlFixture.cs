@@ -13,13 +13,17 @@ namespace SqlBound.MySql.IntegrationTests;
 /// </summary>
 public sealed class MySqlFixture : IAsyncLifetime
 {
-    private readonly MySqlContainer _container = new MySqlBuilder("mysql:8.4").Build();
+    private MySqlContainer? _container;
     private Exception? _startupFailure;
 
     public async ValueTask InitializeAsync()
     {
         try
         {
+            // Build() validates the Docker endpoint and throws when no daemon is reachable at
+            // all (e.g. the macOS CI runners), so it must run inside this guard for the
+            // no-Docker skip path in GetConnectionString to engage.
+            _container = new MySqlBuilder("mysql:8.4").Build();
             await _container.StartAsync();
             await using var connection = new MySqlConnection(_container.GetConnectionString());
             await connection.OpenAsync();
@@ -58,7 +62,13 @@ public sealed class MySqlFixture : IAsyncLifetime
         }
     }
 
-    public async ValueTask DisposeAsync() => await _container.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        if (_container is not null)
+        {
+            await _container.DisposeAsync();
+        }
+    }
 
     public async Task<MySqlConnection> OpenConnectionAsync()
     {
@@ -69,7 +79,7 @@ public sealed class MySqlFixture : IAsyncLifetime
 
     public string GetConnectionString()
     {
-        if (_startupFailure is not null)
+        if (_container is null || _startupFailure is not null)
         {
             if (Environment.GetEnvironmentVariable("CI") is "true" or "1")
             {
@@ -77,7 +87,7 @@ public sealed class MySqlFixture : IAsyncLifetime
                     "The MySQL container is required in CI.", _startupFailure);
             }
 
-            Assert.Skip($"MySQL container unavailable (is Docker running?): {_startupFailure.Message}");
+            Assert.Skip($"MySQL container unavailable (is Docker running?): {_startupFailure?.Message}");
         }
 
         return _container.GetConnectionString();
