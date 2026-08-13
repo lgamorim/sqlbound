@@ -19,6 +19,9 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
+    <!-- Overrides the vulnerable SSH.NET 2025.1.0 pulled in transitively by Testcontainers
+         (GHSA-q939-rpr3-3284); remove once Testcontainers depends on SSH.NET >= 2026.0.0. -->
+    <PackageReference Include="SSH.NET" Version="2026.0.0" />
     <PackageReference Include="Testcontainers.PostgreSql" Version="4.13.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
