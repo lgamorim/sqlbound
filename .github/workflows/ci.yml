@@ -22,10 +22,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
@@ -55,11 +55,11 @@ jobs:
         run: dotnet pack --configuration Release --no-build --output artifacts
 
       - name: Upload NuGet artifacts
-        # Packages are OS-independent; one leg uploads (v4 artifact names must
+        # Packages are OS-independent; one leg uploads (v7 artifact names must
         # be unique across a matrix). Pack itself still runs on every OS so
         # platform-specific packaging bugs surface.
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-packages
           path: artifacts/*.nupkg
@@ -69,10 +69,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
