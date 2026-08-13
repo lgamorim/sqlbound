@@ -1,0 +1,30 @@
+name: Nightly Audit
+
+# NuGet audit checks the live advisory database at restore time, so a newly
+# published vulnerability can turn a previously green master red with zero code
+# change (this is how GHSA-q939-rpr3-3284 broke the merge of the OS-matrix PR).
+# This nightly restore surfaces new advisories on their own schedule, attributed
+# to the advisory itself rather than to whoever happens to merge next.
+on:
+  schedule:
+    # 03:00 UTC, before the working day starts in any contributor timezone.
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore (NuGet audit)
+        # TreatWarningsAsErrors in Directory.Build.props escalates NU19xx audit
+        # warnings to restore failures, so a plain restore is the whole check.
+        run: dotnet restore
