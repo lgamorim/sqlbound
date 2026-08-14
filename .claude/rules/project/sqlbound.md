@@ -14,23 +14,31 @@ rule go upstream to `claude-rules` first and are then re-synced.
   starts only after the user approves the plan.
 - Milestones (M1–M16) are used to track the progress of the project. All
   milestone work happens on a `feature/M<number>-<desc>`-prefixed branch.
-- Versioning follows semantic versioning: each phase gets its own minor version
+- Versioning follows semantic versioning: each phase gets its own version line
   (Phase 1 → `0.1.x`, Phase 2 → `0.2.x`, …; Phase 6 ships `1.0.0`).
-- When a phase completes, tag it on the default branch with an annotated tag
-  (e.g., `git tag -a v0.1.0 -m "..."`) and push the tag to GitHub for
-  reference.
-- `PackageVersion` carries a prerelease suffix (`X.Y.0-preview.N`) during a
-  phase's active development. Closing the phase drops the suffix to the clean
-  `X.Y.0` in the same commit that gets tagged, so the tag always matches the
-  package version it marks exactly. The next phase's first commit starts the
-  new prerelease line (`X.(Y+1).0-preview.1`).
+- Tag the default branch with an annotated tag (e.g.,
+  `git tag -a v0.1.0 -m "..."`) when a phase completes and for each release
+  candidate cut along the way, then push the tag to GitHub for reference.
+- `PackageVersion` in `Directory.Build.props` carries a prerelease suffix
+  while a phase is in flight: `X.Y.Z-preview.N` during development, and
+  `X.Y.Z-rc.N` once the phase is tracking a stable release. Closing the phase
+  drops the suffix to the clean `X.Y.Z` in the same commit that gets tagged.
+  Every tag — release candidates included — is cut on a commit whose
+  `PackageVersion` matches the tag name minus the leading `v`, so a tag always
+  names its package version exactly. The next phase opens at the version the
+  roadmap assigns it, not at a mechanical bump of the previous minor.
+- A release candidate does not close its phase: `PackageVersion` moves to
+  `X.Y.Z-rc.N`, `CHANGELOG.md` gets its own `## [X.Y.Z-rc.N]` entry, and the
+  annotated tag records that the candidate is not published to nuget.org.
+  Further candidates bump `N`; the clean `X.Y.Z` and its `vX.Y.Z` tag at GA
+  are what close the phase and its milestone.
 - Each phase has one matching GitHub milestone (titled
-  `Phase N — <Name> (0.Y.x)`), not one per M-number; every M-number's PR in
-  that phase is associated with the phase's milestone on creation, and the
-  milestone is closed when the phase's final PR merges. The milestone's
-  description lists each composing M-number with its own description as a
-  bullet, so the phase-level summary and the per-milestone detail both stay
-  visible in one place.
+  `Phase N — <Name> (<major>.<minor>.x)`), not one per M-number; every
+  M-number's PR in that phase is associated with the phase's milestone on
+  creation, and the milestone is closed when the phase's final PR merges. The
+  milestone's description lists each composing M-number with its own
+  description as a bullet, so the phase-level summary and the per-milestone
+  detail both stay visible in one place.
 
 ## Testing
 
