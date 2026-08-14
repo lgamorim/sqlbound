@@ -33,9 +33,11 @@ rule go upstream to `claude-rules` first and are then re-synced.
   Further candidates bump `N`; the clean `X.Y.Z` and its `vX.Y.Z` tag at GA
   are what close the phase and its milestone.
 - Each phase has one matching GitHub milestone (titled
-  `Phase N — <Name> (<major>.<minor>.x)`), not one per M-number; every
-  M-number's PR in that phase is associated with the phase's milestone on
-  creation, and the milestone is closed when the phase's final PR merges. The
+  `Phase N — <Name> (<major>.<minor>.x)`), not one per M-number; every PR
+  merged while the phase is in flight — M-number work and chores alike — is
+  associated with the phase's milestone on creation (retroactively if one
+  slips through), so the milestone reads as the complete record of what the
+  phase ships. The milestone is closed when the phase's final PR merges. The
   milestone's description lists each composing M-number with its own
   description as a bullet, so the phase-level summary and the per-milestone
   detail both stay visible in one place.
