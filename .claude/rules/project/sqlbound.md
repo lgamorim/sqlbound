@@ -29,7 +29,8 @@ rule go upstream to `claude-rules` first and are then re-synced.
   roadmap assigns it, not at a mechanical bump of the previous minor.
 - A release candidate does not close its phase: `PackageVersion` moves to
   `X.Y.Z-rc.N`, `CHANGELOG.md` gets its own `## [X.Y.Z-rc.N]` entry, and the
-  annotated tag records that the candidate is not published to nuget.org.
+  candidate is published to nuget.org as a prerelease so it can be validated
+  by real consumers (NuGet offers prereleases only to those who opt in).
   Further candidates bump `N`; the clean `X.Y.Z` and its `vX.Y.Z` tag at GA
   are what close the phase and its milestone.
 - Each phase has one matching GitHub milestone (titled
