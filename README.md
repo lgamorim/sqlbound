@@ -4,6 +4,11 @@
 
 # SqlBound
 
+[![CI](https://img.shields.io/github/actions/workflow/status/lgamorim/sqlbound/ci.yml?branch=master&label=CI)](https://github.com/lgamorim/sqlbound/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-lgamorim.github.io-blue)](https://lgamorim.github.io/sqlbound/)
+[![NuGet](https://img.shields.io/nuget/v/SqlBound)](https://www.nuget.org/packages/SqlBound)
+[![License](https://img.shields.io/github/license/lgamorim/sqlbound)](LICENSE)
+
 SqlBound is a .NET library providing [SQLx](https://github.com/launchbadge/sqlx)-equivalent
 functionality for C#: SQL queries verified at compile time against a real database schema,
 reflection-free row materialization via a Roslyn incremental source generator, SQL-file
