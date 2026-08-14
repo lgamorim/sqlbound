@@ -2,9 +2,10 @@
 
 Rules that apply only to this repository, composed on top of the shared
 `library-team` profile. Shared modules under `core/`, `archetype/`, and
-`overlays/` are copied verbatim from the `claude-rules` repo and must stay
-byte-identical so `tools/sync.ps1 -Check` audits cleanly — never edit them
-here. Sqlbound-specific conventions land in this file; corrections to a shared
+`overlays/`, plus the profile manifest under `profiles/`, are copied
+verbatim from the `claude-rules` repo and must stay byte-identical so
+`tools/sync.ps1 -Check` audits cleanly — never edit them here.
+Sqlbound-specific conventions land in this file; corrections to a shared
 rule go upstream to `claude-rules` first and are then re-synced.
 
 ## Workflow — milestones, phases, versioning
